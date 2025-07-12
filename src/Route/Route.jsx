@@ -8,6 +8,11 @@ import Home from "../Pages/Home/Home";
 import Register from "../Pages/Register/Register";
 import Login from "../Pages/Login/Login";
 import AddArticle from "../Pages/AddArticle/AddArticle";
+import DashboardLayout from "../Layout/DashboardLayout";
+import PrivateRoute from "./PrivateRoute";
+import Dashboard404 from "../Pages/Dashboard/PageNotFound/Dashboard404";
+import AllUsers from "../Pages/Dashboard/AllUsers/AllUsers";
+import NotFound from "../Pages/NotFound/NotFound";
 
 export const router = createBrowserRouter([
   {
@@ -28,8 +33,30 @@ export const router = createBrowserRouter([
         },
         {
             path: '/add-articles',
-            Component : AddArticle
+            element: <PrivateRoute>
+                <AddArticle></AddArticle>
+            </PrivateRoute>
         },
     ]
   },
+  {
+    path: '/dashboard',
+    element : <PrivateRoute>
+        <DashboardLayout></DashboardLayout>
+    </PrivateRoute>,
+    children : [
+        {
+            path: 'all-users',
+            Component: AllUsers
+        },
+        {
+            path: "*",
+            Component: Dashboard404
+        }
+    ]
+  },
+  {
+    path: "*",
+    Component: NotFound
+  }
 ]);

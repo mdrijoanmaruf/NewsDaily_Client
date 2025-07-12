@@ -65,7 +65,7 @@ const Navbar = () => {
     { 
       to: "/dashboard", 
       label: "Dashboard", 
-      condition: isAdmin 
+    //   condition: isAdmin 
     },
     { 
       to: "/premium-articles", 
