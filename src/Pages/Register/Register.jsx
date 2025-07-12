@@ -2,10 +2,12 @@ import React, { useState, } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FaGoogle, FaEye, FaEyeSlash, FaCamera, FaUser, FaEnvelope, FaLock } from 'react-icons/fa'
 import useAuth from '../../Hook/useAuth'
+import useAxios from '../../Hook/useAxios'
 import Swal from 'sweetalert2'
 
 const Register = () => {
   const { createUser, signInWithGoogle } = useAuth()
+  const axiosSecure = useAxios()
   const navigate = useNavigate()
   
   const [formData, setFormData] = useState({
@@ -19,6 +21,46 @@ const Register = () => {
   const [errors, setErrors] = useState({})
   const [passwordErrors, setPasswordErrors] = useState([])
   const [loading, setLoading] = useState(false)
+
+  // Upload photo to ImgBB
+  const uploadPhotoToImgBB = async (photoFile) => {
+    try {
+      const formData = new FormData()
+      formData.append('image', photoFile)
+      
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_IMGBB_API_KEY}`, {
+        method: 'POST',
+        body: formData
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        return data.data.url
+      } else {
+        throw new Error('Photo upload failed')
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error)
+      throw error
+    }
+  }
+
+  // Save user to database
+  const saveUserToDatabase = async (userData) => {
+    try {
+      const response = await axiosSecure.post('/api/users', userData)
+      
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to save user data')
+      }
+      
+      return response.data.data
+    } catch (error) {
+      console.error('Error saving user to database:', error)
+      throw error
+    }
+  }
 
   // Password validation function
   const validatePassword = (password) => {
@@ -104,7 +146,18 @@ const Register = () => {
     
     try {
       // Create user with email and password
-      await createUser(formData.email, formData.password)
+      const userCredential = await createUser(formData.email, formData.password)
+      
+      // Prepare user data for database (without password)
+      const userData = {
+        name: formData.name,
+        email: formData.email,
+        profileImage: formData.photo ? await uploadPhotoToImgBB(formData.photo) : null,
+        oauthProvider: null // Regular email/password signup
+      }
+      
+      // Save user to database
+      await saveUserToDatabase(userData)
       
       // Success alert
       Swal.fire({
@@ -115,10 +168,7 @@ const Register = () => {
         showConfirmButton: false
       })
       
-      // TODO: Handle photo upload and profile update
       console.log('User registered successfully')
-      console.log('Photo to upload:', formData.photo)
-      
       navigate('/')
     } catch (error) {
       console.error('Registration error:', error)
@@ -139,7 +189,25 @@ const Register = () => {
   const handleGoogleSignIn = async () => {
     setLoading(true)
     try {
-      await signInWithGoogle()
+      const userCredential = await signInWithGoogle()
+      
+      // Prepare user data for database
+      const userData = {
+        name: userCredential.user.displayName || 'Google User',
+        email: userCredential.user.email,
+        profileImage: userCredential.user.photoURL || null,
+        oauthProvider: 'google'
+      }
+      
+      // Save user to database (will handle existing user check)
+      try {
+        await saveUserToDatabase(userData)
+      } catch (dbError) {
+        // If user already exists, that's fine - just continue
+        if (!dbError.message.includes('already exists')) {
+          throw dbError
+        }
+      }
       
       // Success alert
       Swal.fire({

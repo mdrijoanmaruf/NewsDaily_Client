@@ -2,10 +2,12 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock, FaNewspaper, FaBell, FaHeart } from 'react-icons/fa'
 import useAuth from '../../Hook/useAuth'
+import useAxios from '../../Hook/useAxios'
 import Swal from 'sweetalert2'
 
 const Login = () => {
   const { signIn, signInWithGoogle } = useAuth()
+  const axiosSecure = useAxios()
   const navigate = useNavigate()
   
   const [formData, setFormData] = useState({
@@ -16,6 +18,25 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
+
+  // Save user to database (for Google login)
+  const saveUserToDatabase = async (userData) => {
+    try {
+      const response = await axiosSecure.post('/api/users', userData)
+      
+      if (!response.data.success && !response.data.message.includes('already exists')) {
+        throw new Error(response.data.message || 'Failed to save user data')
+      }
+      
+      return response.data.data
+    } catch (error) {
+      console.error('Error saving user to database:', error)
+      // Don't throw error for existing users
+      if (!error.response?.data?.message?.includes('already exists')) {
+        throw error
+      }
+    }
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -88,7 +109,23 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     setLoading(true)
     try {
-      await signInWithGoogle()
+      const userCredential = await signInWithGoogle()
+      
+      // Prepare user data for database (in case it's a new Google user)
+      const userData = {
+        name: userCredential.user.displayName || 'Google User',
+        email: userCredential.user.email,
+        profileImage: userCredential.user.photoURL || null,
+        oauthProvider: 'google'
+      }
+      
+      // Save user to database (will handle existing user gracefully)
+      try {
+        await saveUserToDatabase(userData)
+      } catch (dbError) {
+        // Ignore if user already exists, continue with login
+        console.log('User may already exist in database, continuing with login')
+      }
       
       // Success alert
       Swal.fire({
