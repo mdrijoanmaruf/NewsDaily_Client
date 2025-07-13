@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { AuthContext } from "./AuthContext";
 import { auth } from "../Firebase/firebase.init";
-import axios from "axios";
+import useAxios from "../Hook/useAxios";
 import { 
   createUserWithEmailAndPassword, 
   GoogleAuthProvider, 
@@ -15,15 +15,37 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
+  const [userProfileData, setUserProfileData] = useState(null);
+  
+  // Use the custom axios hook
+  const axios = useAxios();
 
-  const checkSubscriptionStatus = async (email) => {
+  const fetchUserData = async (email) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/subscription-status/${email}`);
-      setIsPremium(response.data.isPremium);
+      const response = await axios.get(`/api/users/${email}`);
+      if (response.data.success) {
+        const userData = response.data.data;
+        setUserProfileData(userData);
+        
+        // Check if user has active subscription based on subscriptionEndDate
+        if (userData.subscriptionEndDate) {
+          const endDate = new Date(userData.subscriptionEndDate);
+          const currentDate = new Date();
+          setIsPremium(currentDate < endDate);
+        } else {
+          setIsPremium(false);
+        }
+      }
     } catch (error) {
-      console.error("Error checking subscription status:", error);
+      console.error("Error fetching user data:", error);
       setIsPremium(false);
+      setUserProfileData(null);
     }
+  };
+
+  // Legacy method for backward compatibility
+  const checkSubscriptionStatus = async (email) => {
+    await fetchUserData(email);
   };
 
   const createUser = (email, password) => {
@@ -54,11 +76,12 @@ const AuthProvider = ({ children }) => {
       console.log("User in the onAuthStateChange : ", currentUser);
       setLoading(false);
       
-      // Check subscription status when user logs in
+      // Fetch complete user data when user logs in
       if (currentUser?.email) {
-        checkSubscriptionStatus(currentUser.email);
+        fetchUserData(currentUser.email);
       } else {
         setIsPremium(false);
+        setUserProfileData(null);
       }
     });
     return () => {
@@ -71,7 +94,7 @@ const AuthProvider = ({ children }) => {
     let interval;
     if (user?.email) {
       interval = setInterval(() => {
-        checkSubscriptionStatus(user.email);
+        fetchUserData(user.email);
       }, 60000); // Check every minute
     }
     return () => {
@@ -85,11 +108,13 @@ const AuthProvider = ({ children }) => {
     user,
     loading,
     isPremium,
+    userProfileData,
     createUser,
     signIn,
     logOut,
     signInWithGoogle,
     checkSubscriptionStatus,
+    fetchUserData,
   };
 
   return (

@@ -180,7 +180,14 @@ const Subscription = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className="relative text-center mb-16">
+          {/* Bullet Points in Top Right */}
+          <div className="absolute top-0 right-0 flex space-x-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-3 h-3 bg-amber-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+          </div>
+          
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
             Choose Your Premium Plan
           </h2>
@@ -234,14 +241,6 @@ const Subscription = () => {
                       </li>
                     ))}
                   </ul>
-
-                  <div className="text-center">
-                    <div className={`w-6 h-6 mx-auto border-2 rounded-full flex items-center justify-center ${
-                      isSelected ? colors.ring : 'border-gray-300'
-                    }`}>
-                      {isSelected && <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${colors.bg}`}></div>}
-                    </div>
-                  </div>
                 </div>
               </div>
             );

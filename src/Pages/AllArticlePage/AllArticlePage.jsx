@@ -5,11 +5,12 @@ import { FaSearch, FaNewspaper, FaUser, FaCalendar, FaTag, FaEye, FaCrown, FaLoc
 import useAxios from '../../Hook/useAxios';
 import useAuth from '../../Hook/useAuth';
 import ComponentLoading from '../../Shared/Loading/ComponentLoading';
+import Swal from 'sweetalert2';
 
 const AllArticlePage = () => {
   const navigate = useNavigate();
   const axios = useAxios();
-  const { user } = useAuth();
+  const { user, isPremium } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -50,16 +51,33 @@ const AllArticlePage = () => {
     });
   };
 
-  // Check if user has premium subscription (you can modify this logic based on your user schema)
-  const hasPremiumSubscription = user?.premiumTaken || false;
+  // Check if user has premium subscription using the real-time status from AuthProvider
+  const hasPremiumSubscription = isPremium;
 
   // Handle article details navigation
   const handleViewDetails = (article) => {
+    // Allow access to regular articles for all users
+    // Allow access to premium articles only for premium subscribers
     if (article.premium && !hasPremiumSubscription) {
-      // Premium article but user doesn't have subscription - disable button
+      // Show upgrade message for premium articles without subscription
+      Swal.fire({
+        title: '👑 Premium Content',
+        text: 'This is a premium article. Please upgrade to premium to access exclusive content.',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#F59E0B',
+        cancelButtonColor: '#6B7280',
+        confirmButtonText: 'Upgrade to Premium',
+        cancelButtonText: 'Maybe Later',
+        reverseButtons: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/subscription');
+        }
+      });
       return;
     }
-    // Navigate to article details page (you'll need to create this route)
+    // Navigate to article details page
     navigate(`/article/${article._id}`);
   };
 
@@ -141,94 +159,92 @@ const AllArticlePage = () => {
 
         {/* Articles Grid */}
         {filteredArticles.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredArticles.map((article) => (
               <div
                 key={article._id}
-                className={`rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-105 ${
+                className={`group relative rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${
                   article.premium
-                    ? 'bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 border-2 border-amber-300 relative'
+                    ? 'bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 border border-amber-300'
                     : 'bg-white border border-gray-200'
                 }`}
               >
                 {/* Premium Badge */}
                 {article.premium && (
-                  <div className="absolute top-3 right-3 z-10">
-                    <div className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-lg">
+                  <div className="absolute top-3 right-3 z-20">
+                    <div className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center shadow-md">
                       <FaCrown className="mr-1" />
-                      PREMIUM
+                      PRO
                     </div>
                   </div>
                 )}
 
                 {/* Article Image */}
-                <div className="relative h-48 overflow-hidden">
+                <div className="relative h-44 overflow-hidden">
                   <img
                     src={article.image || '/placeholder-article.jpg'}
                     alt={article.title}
-                    className={`w-full h-full object-cover transition-transform duration-300 hover:scale-110 ${
-                      article.premium ? 'ring-2 ring-amber-400' : ''
-                    }`}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
                   />
-                  {article.premium && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-amber-900/20 to-transparent"></div>
-                  )}
+                  <div className={`absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent ${
+                    article.premium ? 'from-amber-900/30' : 'from-black/20'
+                  }`}></div>
                 </div>
 
                 {/* Article Content */}
-                <div className="p-6">
+                <div className="p-4 space-y-3">
                   {/* Article Title */}
-                  <h3 className={`text-xl font-bold mb-3 line-clamp-2 ${
+                  <h3 className={`text-lg font-bold leading-tight line-clamp-2 min-h-[3.5rem] ${
                     article.premium ? 'text-amber-900' : 'text-gray-900'
                   }`}>
                     {article.title}
                   </h3>
 
                   {/* Article Meta Info */}
-                  <div className="flex items-center text-sm text-gray-600 mb-3 space-x-4">
+                  <div className="flex items-center justify-between text-xs text-gray-500">
                     <div className="flex items-center">
-                      <FaUser className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
-                      <span>{article.author?.name || 'Unknown Author'}</span>
+                      <FaUser className={`mr-1 ${article.premium ? 'text-amber-500' : 'text-blue-500'}`} />
+                      <span className="truncate max-w-20">{article.author?.name || 'Unknown'}</span>
                     </div>
                     <div className="flex items-center">
-                      <FaCalendar className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
+                      <FaCalendar className={`mr-1 ${article.premium ? 'text-amber-500' : 'text-blue-500'}`} />
                       <span>{formatDate(article.createdAt)}</span>
                     </div>
                   </div>
 
                   {/* Publisher Info */}
                   {article.publisher && (
-                    <div className="flex items-center text-sm text-gray-600 mb-3">
-                      <FaNewspaper className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
-                      <span className="font-medium">{article.publisher}</span>
+                    <div className="flex items-center text-xs text-gray-600">
+                      <FaNewspaper className={`mr-1 flex-shrink-0 ${article.premium ? 'text-amber-500' : 'text-blue-500'}`} />
+                      <span className="font-medium truncate">{article.publisher}</span>
                     </div>
                   )}
 
                   {/* Tags */}
                   {article.tags && article.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {article.tags.slice(0, 3).map((tag, index) => (
+                    <div className="flex flex-wrap gap-1">
+                      {article.tags.slice(0, 2).map((tag, index) => (
                         <span
                           key={index}
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
                             article.premium
-                              ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                              : 'bg-blue-100 text-blue-800 border border-blue-300'
+                              ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                              : 'bg-blue-100 text-blue-700 border border-blue-200'
                           }`}
                         >
-                          <FaTag className="mr-1" />
                           {tag}
                         </span>
                       ))}
-                      {article.tags.length > 3 && (
-                        <span className="text-xs text-gray-500">+{article.tags.length - 3} more</span>
+                      {article.tags.length > 2 && (
+                        <span className="text-xs text-gray-400 px-1 py-1">+{article.tags.length - 2}</span>
                       )}
                     </div>
                   )}
 
                   {/* Article Description */}
-                  <p className={`text-sm mb-4 line-clamp-3 ${
-                    article.premium ? 'text-amber-800' : 'text-gray-700'
+                  <p className={`text-sm leading-relaxed line-clamp-2 min-h-[2.5rem] ${
+                    article.premium ? 'text-amber-700' : 'text-gray-600'
                   }`}>
                     {article.description}
                   </p>
@@ -236,32 +252,31 @@ const AllArticlePage = () => {
                   {/* Details Button */}
                   <button
                     onClick={() => handleViewDetails(article)}
-                    disabled={article.premium && !hasPremiumSubscription}
-                    className={`w-full py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center justify-center ${
+                    className={`w-full py-2.5 px-4 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center justify-center space-x-2 ${
                       article.premium && !hasPremiumSubscription
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white hover:from-amber-600 hover:to-yellow-600 shadow-md hover:shadow-lg'
                         : article.premium
-                        ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white hover:from-amber-600 hover:to-yellow-700 shadow-lg hover:shadow-xl'
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white hover:from-amber-600 hover:to-yellow-600 shadow-md hover:shadow-lg'
                         : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg'
                     }`}
                   >
                     {article.premium && !hasPremiumSubscription ? (
                       <>
-                        <FaLock className="mr-2" />
-                        Premium Required
+                        <FaLock className="w-4 h-4" />
+                        <span>Upgrade to View</span>
                       </>
                     ) : (
                       <>
-                        <FaEye className="mr-2" />
-                        View Details
+                        <FaEye className="w-4 h-4" />
+                        <span>Read Article</span>
                       </>
                     )}
                   </button>
 
                   {/* Premium Notice */}
                   {article.premium && !hasPremiumSubscription && (
-                    <p className="text-xs text-amber-700 mt-2 text-center">
-                      Subscribe to premium to access this article
+                    <p className="text-xs text-amber-600 text-center font-medium">
+                      Premium subscription required
                     </p>
                   )}
                 </div>
@@ -308,7 +323,10 @@ const AllArticlePage = () => {
                   'Subscribe to our premium plan to access exclusive articles and features.'}
                 </p>
                 {!hasPremiumSubscription && (
-                  <button className="mt-3 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+                  <button 
+                    onClick={() => navigate('/subscription')}
+                    className="mt-3 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                  >
                     Upgrade to Premium
                   </button>
                 )}

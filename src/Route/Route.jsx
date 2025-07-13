@@ -20,6 +20,8 @@ import ArticleDetails from "../Pages/ArticleDetails/ArticleDetails";
 import Subscription from "../Pages/Subscription/Subscription";
 import Payment from "../Pages/Payment/Payment";
 import StripeTest from "../Pages/StripeTest/StripeTest";
+import MyArticles from "../Pages/MyArticles/MyArticles";
+import UpdateArticle from "../Pages/UpdateArticle/UpdateArticle";
 
 export const router = createBrowserRouter([
   {
@@ -39,7 +41,7 @@ export const router = createBrowserRouter([
             Component : Login
         },
         {
-            path: '/add-articles',
+            path: '/add-article',
             element: <PrivateRoute>
                 <AddArticle></AddArticle>
             </PrivateRoute>
@@ -66,6 +68,18 @@ export const router = createBrowserRouter([
           path: '/article/:id',
           element: <PrivateRoute>
             <ArticleDetails></ArticleDetails>
+          </PrivateRoute>
+        },
+        {
+          path: '/my-articles',
+          element: <PrivateRoute>
+            <MyArticles></MyArticles>
+          </PrivateRoute>
+        },
+        {
+          path: '/update-article/:id',
+          element: <PrivateRoute>
+            <UpdateArticle></UpdateArticle>
           </PrivateRoute>
         },
         {

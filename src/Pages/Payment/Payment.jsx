@@ -5,6 +5,7 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import stripePromise from '../../lib/stripe';
 import useAuth from '../../Hook/useAuth';
 import useAxios from '../../Hook/useAxios';
+import Swal from 'sweetalert2';
 
 // Stripe Card Element styling
 const cardElementOptions = {
@@ -118,8 +119,21 @@ const PaymentForm = ({ planId, price, duration }) => {
           await checkSubscriptionStatus(user.email);
           
           // Show success message and redirect
-          alert('🎉 Payment successful! You now have premium access.');
-          navigate('/all-articles');
+          Swal.fire({
+            title: '🎉 Payment Successful!',
+            text: 'You now have premium access to all articles.',
+            icon: 'success',
+            confirmButtonText: 'Start Reading',
+            confirmButtonColor: '#10b981',
+            showClass: {
+              popup: 'animate__animated animate__fadeInUp'
+            },
+            hideClass: {
+              popup: 'animate__animated animate__fadeOutDown'
+            }
+          }).then(() => {
+            navigate('/all-articles');
+          });
         } else {
           throw new Error(confirmationData.message || 'Failed to activate subscription');
         }

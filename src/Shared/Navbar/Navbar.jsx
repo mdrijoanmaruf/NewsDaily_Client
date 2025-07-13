@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import useAuth from '../../Hook/useAuth';
 import useUserRole from '../../Hook/useUserRole';
 import Swal from 'sweetalert2';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
   const { user, logOut, isPremium } = useAuth()
   const { userRole, isAdmin, isLoading: roleLoading } = useUserRole();
   
@@ -73,19 +74,25 @@ const Navbar = () => {
 
   // Conditional navigation items
   const conditionalItems = [
-    { 
-      to: "/premium-articles", 
-      label: "Premium Articles", 
-      condition: hasSubscription,
-      badge: "PRO"
-    }
+    // Removed Premium Articles navigation item
   ]
 
   // Base link styles
   const linkStyles = {
-    desktop: "text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200",
-    mobile: "block text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium"
+    desktop: "px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200",
+    mobile: "block px-3 py-2 rounded-md text-base font-medium"
   }
+
+  // Function to get link classes with active state
+  const getLinkClasses = (path, isMobile = false) => {
+    const isActive = location.pathname === path;
+    const baseClasses = isMobile ? linkStyles.mobile : linkStyles.desktop;
+    
+    if (isActive) {
+      return `${baseClasses} text-blue-600 bg-blue-50 font-semibold`;
+    }
+    return `${baseClasses} text-gray-700 hover:text-blue-600`;
+  };
 
   return (
     <nav className="bg-white shadow-lg border-b-2 border-blue-600">
@@ -111,7 +118,7 @@ const Navbar = () => {
               <Link 
                 key={item.to}
                 to={item.to} 
-                className={linkStyles.desktop}
+                className={getLinkClasses(item.to)}
               >
                 {item.label}
               </Link>
@@ -123,7 +130,7 @@ const Navbar = () => {
                 <Link 
                   key={item.to}
                   to={item.to} 
-                  className={linkStyles.desktop}
+                  className={getLinkClasses(item.to)}
                 >
                   {item.label}
                 </Link>
@@ -136,7 +143,7 @@ const Navbar = () => {
                 <Link 
                   key={item.to}
                   to={item.to} 
-                  className={`${linkStyles.desktop} ${item.badge ? 'relative' : ''}`}
+                  className={`${getLinkClasses(item.to)} ${item.badge ? 'relative' : ''}`}
                 >
                   {item.label}
                   {item.badge && (
@@ -154,18 +161,32 @@ const Navbar = () => {
             {isLoggedIn ? (
               <div className="flex items-center space-x-3">
                 {/* User Profile Link */}
-                <Link to="/profile" className="flex items-center space-x-2">
+                <Link to="/profile" className="flex items-center space-x-2 relative">
                   {userPhoto ? (
                     <img 
                       src={userPhoto} 
                       alt="Profile" 
-                      className="w-8 h-8 rounded-full border-2 border-blue-600"
+                      className={`w-8 h-8 rounded-full border-2 ${
+                        hasSubscription 
+                          ? 'border-yellow-400 ring-2 ring-yellow-300' 
+                          : 'border-blue-600'
+                      }`}
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                      hasSubscription 
+                        ? 'bg-gradient-to-r from-yellow-400 to-amber-500 border-yellow-400 ring-2 ring-yellow-300' 
+                        : 'bg-blue-600 border-blue-600'
+                    }`}>
                       <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
                       </svg>
+                    </div>
+                  )}
+                  {/* Premium Badge */}
+                  {hasSubscription && (
+                    <div className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-black text-xs px-1.5 py-0.5 rounded-full flex items-center font-bold">
+                      👑
                     </div>
                   )}
                 </Link>
@@ -221,7 +242,7 @@ const Navbar = () => {
                 <Link 
                   key={item.to}
                   to={item.to} 
-                  className={linkStyles.mobile}
+                  className={getLinkClasses(item.to, true)}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.label}
@@ -234,7 +255,7 @@ const Navbar = () => {
                   <Link 
                     key={item.to}
                     to={item.to} 
-                    className={linkStyles.mobile}
+                    className={getLinkClasses(item.to, true)}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {item.label}
@@ -248,7 +269,7 @@ const Navbar = () => {
                   <Link 
                     key={item.to}
                     to={item.to} 
-                    className={linkStyles.mobile}
+                    className={getLinkClasses(item.to, true)}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {item.label} {item.badge && '⭐'}
@@ -262,23 +283,35 @@ const Navbar = () => {
                   <div className="space-y-2">
                     <Link 
                       to="/profile" 
-                      className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium"
+                      className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium relative"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       {userPhoto ? (
                         <img 
                           src={userPhoto} 
                           alt="Profile" 
-                          className="w-6 h-6 rounded-full border border-blue-600"
+                          className={`w-6 h-6 rounded-full border ${
+                            hasSubscription 
+                              ? 'border-yellow-400 ring-1 ring-yellow-300' 
+                              : 'border-blue-600'
+                          }`}
                         />
                       ) : (
-                        <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center border ${
+                          hasSubscription 
+                            ? 'bg-gradient-to-r from-yellow-400 to-amber-500 border-yellow-400 ring-1 ring-yellow-300' 
+                            : 'bg-blue-600 border-blue-600'
+                        }`}>
                           <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
                           </svg>
                         </div>
                       )}
-                      <span>{userName}</span>
+                      <span className={hasSubscription ? 'text-amber-700 font-semibold' : ''}>{userName}</span>
+                      {/* Premium Badge for Mobile */}
+                      {hasSubscription && (
+                        <span className="text-yellow-500 text-sm">👑</span>
+                      )}
                     </Link>
                     
                     <button 
