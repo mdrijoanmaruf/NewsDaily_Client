@@ -10,10 +10,7 @@ const ArticleDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const axios = useAxios();
-  const { user } = useAuth();
-
-  // Check if user has premium subscription
-  const hasPremiumSubscription = user?.premiumTaken || false;
+  const { user, isPremium } = useAuth();
 
   // Increment view count mutation
   const incrementViewMutation = useMutation({
@@ -45,7 +42,7 @@ const ArticleDetails = () => {
       }
       
       // Check premium access
-      if (article.premium && !hasPremiumSubscription) {
+      if (article.premium && !isPremium) {
         throw new Error('Premium subscription required');
       }
       
@@ -89,13 +86,13 @@ const ArticleDetails = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md w-full">
-          <div className="text-red-600 text-6xl mb-4">❌</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="text-center p-6 sm:p-8 bg-white rounded-xl shadow-xl w-full max-w-md mx-auto">
+          <div className="text-red-600 text-4xl sm:text-6xl mb-4">❌</div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
             {error.message === 'Premium subscription required' ? 'Premium Content' : 'Article Not Found'}
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-sm sm:text-base text-gray-600 mb-6">
             {error.message === 'Premium subscription required' 
               ? 'This article requires a premium subscription to view.'
               : 'The article you\'re looking for could not be found or is not available.'}
@@ -103,12 +100,12 @@ const ArticleDetails = () => {
           <div className="flex flex-col space-y-3">
             <button
               onClick={() => navigate('/all-articles')}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors"
             >
               Back to Articles
             </button>
             {error.message === 'Premium subscription required' && (
-              <button className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+              <button className="px-4 sm:px-6 py-2 sm:py-3 bg-amber-600 text-white text-sm sm:text-base rounded-lg hover:bg-amber-700 transition-colors">
                 Upgrade to Premium
               </button>
             )}
@@ -119,163 +116,228 @@ const ArticleDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header with back button */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      <div className="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <button
             onClick={() => navigate('/all-articles')}
-            className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
+            className="flex items-center text-blue-600 hover:text-blue-700 transition-colors font-medium text-sm sm:text-base"
           >
-            <FaArrowLeft className="mr-2" />
+            <FaArrowLeft className="mr-2 text-sm sm:text-base" />
             Back to Articles
           </button>
         </div>
       </div>
 
       {/* Article Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <article className={`bg-white rounded-lg shadow-lg overflow-hidden ${
-          article.premium ? 'ring-2 ring-amber-400' : ''
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <article className={`bg-white rounded-xl shadow-xl overflow-hidden ${
+          article.premium ? 'ring-2 ring-amber-400 shadow-amber-100' : 'shadow-gray-200'
         }`}>
           
           {/* Premium Badge */}
           {article.premium && (
-            <div className="bg-gradient-to-r from-amber-400 to-yellow-500 text-white px-6 py-3">
+            <div className="bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
               <div className="flex items-center justify-center">
-                <FaCrown className="mr-2" />
-                <span className="font-bold">PREMIUM ARTICLE</span>
+                <FaCrown className="mr-2 sm:mr-3 text-base sm:text-lg" />
+                <span className="font-bold text-sm sm:text-base lg:text-lg">PREMIUM ARTICLE</span>
               </div>
             </div>
           )}
 
-          {/* Article Header */}
-          <div className="p-8">
-            {/* Article Title */}
-            <h1 className={`text-3xl md:text-4xl font-bold mb-6 leading-tight ${
-              article.premium ? 'text-amber-900' : 'text-gray-900'
-            }`}>
-              {article.title}
-            </h1>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
+            
+            {/* Left Column - Article Content */}
+            <div className="xl:col-span-2 p-4 sm:p-6 lg:p-8">
+              {/* Article Title */}
+              <h1 className={`text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 leading-tight ${
+                article.premium ? 'text-amber-900' : 'text-gray-900'
+              }`}>
+                {article.title}
+              </h1>
 
-            {/* Article Meta */}
-            <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 mb-6">
-              <div className="flex items-center">
-                <img
-                  src={article.author?.photo || '/placeholder-user.jpg'}
-                  alt={article.author?.name || 'Author'}
-                  className="w-10 h-10 rounded-full mr-3 border-2 border-gray-200"
-                  onError={(e) => {
-                    e.target.src = '/placeholder-user.jpg';
-                  }}
-                />
-                <div>
-                  <div className="flex items-center">
-                    <FaUser className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
-                    <span className="font-medium">{article.author?.name || 'Unknown Author'}</span>
-                  </div>
-                  <div className="text-xs text-gray-500">{article.author?.email}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <FaCalendar className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
-                <span>Published on {formatDate(article.createdAt)}</span>
-              </div>
-
-              {article.publisher && (
-                <div className="flex items-center">
-                  <FaNewspaper className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
-                  <span className="font-medium">{article.publisher}</span>
+              {/* Article Image */}
+              {article.image && (
+                <div className="mb-6 sm:mb-8">
+                  <img
+                    src={article.image}
+                    alt={article.title}
+                    className={`w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover rounded-lg sm:rounded-xl shadow-lg ${
+                      article.premium ? 'ring-1 sm:ring-2 ring-amber-300' : 'ring-1 ring-gray-200'
+                    }`}
+                    onError={(e) => {
+                      e.target.src = '/placeholder-article.jpg';
+                    }}
+                  />
                 </div>
               )}
 
-              <div className="flex items-center">
-                <FaEye className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
-                <span>{article.views || 0} views</span>
+              {/* Article Content */}
+              <div className={`prose prose-sm sm:prose-base lg:prose-lg max-w-none ${
+                article.premium ? 'prose-amber' : 'prose-blue'
+              }`}>
+                <div className="text-gray-700 leading-relaxed text-sm sm:text-base lg:text-lg whitespace-pre-wrap">
+                  {article.description}
+                </div>
               </div>
             </div>
 
-            {/* Tags */}
-            {article.tags && article.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-6">
-                {article.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      article.premium
-                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                        : 'bg-blue-100 text-blue-800 border border-blue-300'
-                    }`}
-                  >
-                    <FaTag className="mr-1" />
-                    {tag}
-                  </span>
-                ))}
+            {/* Right Column - Sidebar */}
+            <div className="xl:col-span-1 bg-gray-50 p-4 sm:p-6 lg:p-8 order-first xl:order-last">
+              
+              {/* Author Info */}
+              <div className={`mb-6 sm:mb-8 p-4 sm:p-6 rounded-lg sm:rounded-xl ${
+                article.premium ? 'bg-amber-50 border border-amber-200' : 'bg-white border border-gray-200'
+              }`}>
+                <h3 className={`text-base sm:text-lg font-semibold mb-3 sm:mb-4 ${
+                  article.premium ? 'text-amber-900' : 'text-gray-900'
+                }`}>
+                  About the Author
+                </h3>
+                <div className="flex items-start">
+                  <img
+                    src={article.author?.photo || '/placeholder-user.jpg'}
+                    alt={article.author?.name || 'Author'}
+                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-full mr-3 sm:mr-4 border-2 border-gray-200 flex-shrink-0"
+                    onError={(e) => {
+                      e.target.src = '/placeholder-user.jpg';
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center mb-1 sm:mb-2">
+                      <FaUser className={`mr-1 sm:mr-2 text-sm ${article.premium ? 'text-amber-600' : 'text-blue-600'} flex-shrink-0`} />
+                      <span className="font-semibold text-gray-900 text-sm sm:text-base truncate">{article.author?.name || 'Unknown Author'}</span>
+                    </div>
+                    <div className="text-xs sm:text-sm text-gray-600 truncate">{article.author?.email}</div>
+                  </div>
+                </div>
               </div>
-            )}
 
-            {/* Share Button */}
-            <div className="flex justify-end mb-6">
-              <button
-                onClick={handleShare}
-                className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  article.premium
-                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                }`}
-              >
-                <FaShare className="mr-2" />
-                Share Article
-              </button>
-            </div>
-          </div>
+              {/* Article Meta Information */}
+              <div className={`mb-6 sm:mb-8 p-4 sm:p-6 rounded-lg sm:rounded-xl ${
+                article.premium ? 'bg-amber-50 border border-amber-200' : 'bg-white border border-gray-200'
+              }`}>
+                <h3 className={`text-base sm:text-lg font-semibold mb-3 sm:mb-4 ${
+                  article.premium ? 'text-amber-900' : 'text-gray-900'
+                }`}>
+                  Article Information
+                </h3>
+                
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="flex items-start">
+                    <FaCalendar className={`mr-2 sm:mr-3 mt-1 text-sm ${article.premium ? 'text-amber-600' : 'text-blue-600'} flex-shrink-0`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs sm:text-sm text-gray-600">Published on</div>
+                      <div className="font-medium text-sm sm:text-base">{formatDate(article.createdAt)}</div>
+                    </div>
+                  </div>
 
-          {/* Article Image */}
-          {article.image && (
-            <div className="px-8 mb-8">
-              <img
-                src={article.image}
-                alt={article.title}
-                className={`w-full h-64 md:h-96 object-cover rounded-lg shadow-md ${
-                  article.premium ? 'ring-2 ring-amber-300' : ''
-                }`}
-              />
-            </div>
-          )}
+                  {article.publisher && (
+                    <div className="flex items-start">
+                      <FaNewspaper className={`mr-2 sm:mr-3 mt-1 text-sm ${article.premium ? 'text-amber-600' : 'text-blue-600'} flex-shrink-0`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs sm:text-sm text-gray-600">Publisher</div>
+                        <div className="font-medium text-sm sm:text-base truncate">{article.publisher}</div>
+                      </div>
+                    </div>
+                  )}
 
-          {/* Article Content */}
-          <div className="px-8 pb-8">
-            <div className={`prose prose-lg max-w-none ${
-              article.premium ? 'prose-amber' : 'prose-blue'
-            }`}>
-              <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {article.description}
+                  <div className="flex items-start">
+                    <FaEye className={`mr-2 sm:mr-3 mt-1 text-sm ${article.premium ? 'text-amber-600' : 'text-blue-600'} flex-shrink-0`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs sm:text-sm text-gray-600">Views</div>
+                      <div className="font-medium text-sm sm:text-base">{article.views || 0} views</div>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* Tags */}
+              {article.tags && article.tags.length > 0 && (
+                <div className={`mb-6 sm:mb-8 p-4 sm:p-6 rounded-lg sm:rounded-xl ${
+                  article.premium ? 'bg-amber-50 border border-amber-200' : 'bg-white border border-gray-200'
+                }`}>
+                  <h3 className={`text-base sm:text-lg font-semibold mb-3 sm:mb-4 ${
+                    article.premium ? 'text-amber-900' : 'text-gray-900'
+                  }`}>
+                    Tags
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {article.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                          article.premium
+                            ? 'bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200'
+                            : 'bg-blue-100 text-blue-800 border border-blue-300 hover:bg-blue-200'
+                        }`}
+                      >
+                        <FaTag className="mr-1 sm:mr-2 text-xs" />
+                        <span className="truncate max-w-[120px] sm:max-w-none">{tag}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Share Section */}
+              <div className={`mb-6 sm:mb-8 p-4 sm:p-6 rounded-lg sm:rounded-xl ${
+                article.premium ? 'bg-amber-50 border border-amber-200' : 'bg-white border border-gray-200'
+              }`}>
+                <h3 className={`text-base sm:text-lg font-semibold mb-3 sm:mb-4 ${
+                  article.premium ? 'text-amber-900' : 'text-gray-900'
+                }`}>
+                  Share Article
+                </h3>
+                <button
+                  onClick={handleShare}
+                  className={`w-full flex items-center justify-center px-3 sm:px-4 py-2 sm:py-3 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    article.premium
+                      ? 'bg-amber-600 text-white hover:bg-amber-700 shadow-md hover:shadow-lg'
+                      : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg'
+                  }`}
+                >
+                  <FaShare className="mr-2 text-xs sm:text-sm" />
+                  Share this Article
+                </button>
+              </div>
+
+              {/* Premium Badge */}
+              {article.premium && (
+                <div className="bg-gradient-to-br from-amber-100 to-yellow-100 border-2 border-amber-300 rounded-lg sm:rounded-xl p-4 sm:p-6 text-center">
+                  <FaCrown className="mx-auto text-2xl sm:text-3xl text-amber-600 mb-2 sm:mb-3" />
+                  <h3 className="text-base sm:text-lg font-bold text-amber-900 mb-1 sm:mb-2">Premium Content</h3>
+                  <p className="text-xs sm:text-sm text-amber-800">
+                    This is exclusive premium content available to subscribers only.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Article Footer */}
-          <div className={`border-t px-8 py-6 ${
+          <div className={`border-t px-4 sm:px-6 lg:px-8 py-4 sm:py-6 ${
             article.premium ? 'bg-amber-50 border-amber-200' : 'bg-gray-50'
           }`}>
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                <p>Article ID: {article._id}</p>
+            <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 gap-4">
+              <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+                <p>Article ID: <span className="font-mono text-xs break-all">{article._id}</span></p>
                 <p>Last updated: {formatDate(article.updatedAt || article.createdAt)}</p>
               </div>
               
-              <div className="flex items-center space-x-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                 {article.premium && (
-                  <div className="flex items-center text-amber-700 text-sm font-medium">
-                    <FaCrown className="mr-1" />
+                  <div className="flex items-center text-amber-700 text-xs sm:text-sm font-medium">
+                    <FaCrown className="mr-1 sm:mr-2" />
                     Premium Content
                   </div>
                 )}
                 
                 <button
                   onClick={() => navigate('/all-articles')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg ${
                     article.premium
                       ? 'bg-amber-600 text-white hover:bg-amber-700'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
@@ -288,11 +350,27 @@ const ArticleDetails = () => {
           </div>
         </article>
 
-        {/* Related Articles Section (placeholder) */}
-        <div className="mt-12">
-          <h3 className="text-2xl font-bold text-gray-800 mb-6">Related Articles</h3>
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <p className="text-gray-600">Related articles feature coming soon...</p>
+        {/* Related Articles Section */}
+        <div className="mt-8 sm:mt-12">
+          <div className="flex items-center mb-6 sm:mb-8">
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mr-3 sm:mr-4">Related Articles</h3>
+            <div className="flex-1 h-px bg-gradient-to-r from-gray-300 to-transparent"></div>
+          </div>
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 p-6 sm:p-8 lg:p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="text-4xl sm:text-5xl lg:text-6xl mb-3 sm:mb-4">🔗</div>
+              <h4 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-3">Related Articles Coming Soon</h4>
+              <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+                We're working on implementing a smart recommendation system to show you articles related to your interests.
+              </p>
+              <button
+                onClick={() => navigate('/all-articles')}
+                className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white font-medium text-sm sm:text-base rounded-md sm:rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <FaNewspaper className="mr-1 sm:mr-2" />
+                Browse All Articles
+              </button>
+            </div>
           </div>
         </div>
       </div>

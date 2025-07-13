@@ -17,6 +17,9 @@ import AllArticles from "../Pages/Dashboard/AllArticles/AllArticles";
 import AddPublisher from "../Pages/Dashboard/AddPublisher/AddPublisher";
 import AllArticlePage from "../Pages/AllArticlePage/AllArticlePage";
 import ArticleDetails from "../Pages/ArticleDetails/ArticleDetails";
+import Subscription from "../Pages/Subscription/Subscription";
+import Payment from "../Pages/Payment/Payment";
+import StripeTest from "../Pages/StripeTest/StripeTest";
 
 export const router = createBrowserRouter([
   {
@@ -48,10 +51,26 @@ export const router = createBrowserRouter([
           </PrivateRoute>
         },
         {
+          path: '/subscription',
+          element: <PrivateRoute>
+            <Subscription></Subscription>
+          </PrivateRoute>
+        },
+        {
+          path: '/payment',
+          element: <PrivateRoute>
+            <Payment></Payment>
+          </PrivateRoute>
+        },
+        {
           path: '/article/:id',
           element: <PrivateRoute>
             <ArticleDetails></ArticleDetails>
           </PrivateRoute>
+        },
+        {
+          path: '/stripe-test',
+          Component: StripeTest
         }
     ]
   },

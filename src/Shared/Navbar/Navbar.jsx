@@ -6,12 +6,12 @@ import Swal from 'sweetalert2';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, logOut } = useAuth()
+  const { user, logOut, isPremium } = useAuth()
   const { userRole, isAdmin, isLoading: roleLoading } = useUserRole();
   
   // Derived states from user context
   const isLoggedIn = !!user // true if user exists
-  const hasSubscription = false // TODO: Add subscription check logic
+  const hasSubscription = isPremium // Use real-time premium status
   const userPhoto = user?.photoURL || null // Get user photo from auth
   const userName = user?.displayName || user?.email || 'User' // Get user name
   
