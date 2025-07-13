@@ -198,8 +198,8 @@ const DashboardLayout = () => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6 bg-gray-50">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 bg-gray-50">
+          <div className="">
             <Outlet />
           </div>
         </main>
