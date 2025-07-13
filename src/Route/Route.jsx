@@ -14,6 +14,7 @@ import Dashboard404 from "../Pages/Dashboard/PageNotFound/Dashboard404";
 import AllUsers from "../Pages/Dashboard/AllUsers/AllUsers";
 import NotFound from "../Pages/NotFound/NotFound";
 import AllArticles from "../Pages/Dashboard/AllArticles/AllArticles";
+import AddPublisher from "../Pages/Dashboard/AddPublisher/AddPublisher";
 
 export const router = createBrowserRouter([
   {
@@ -53,6 +54,10 @@ export const router = createBrowserRouter([
         {
             path: 'all-articles',
             Component: AllArticles
+        },
+        {
+          path: 'add-publisher',
+          Component: AddPublisher
         },
         {
             path: "*",

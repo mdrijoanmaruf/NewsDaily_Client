@@ -24,6 +24,7 @@ const AddArticle = () => {
   const [loading, setLoading] = useState(false)
   const [imageUploading, setImageUploading] = useState(false)
   const [publishers, setPublishers] = useState([])
+  const [publishersLoading, setPublishersLoading] = useState(true)
 
   // ImgBB API configuration
   const imgbbAPIKey = import.meta.env.VITE_ImgB_API_KEY
@@ -53,23 +54,44 @@ const AddArticle = () => {
     { value: 'feature', label: 'Feature Story' }
   ]
 
-  // Mock publishers data (will be fetched from API)
-  const mockPublishers = [
-    { value: 'bbc-news', label: 'BBC News' },
-    { value: 'cnn', label: 'CNN' },
-    { value: 'reuters', label: 'Reuters' },
-    { value: 'associated-press', label: 'Associated Press' },
-    { value: 'the-guardian', label: 'The Guardian' },
-    { value: 'new-york-times', label: 'New York Times' },
-    { value: 'washington-post', label: 'Washington Post' },
-    { value: 'daily-star', label: 'Daily Star' },
-    { value: 'prothom-alo', label: 'Prothom Alo' },
-    { value: 'bdnews24', label: 'BDNews24' }
-  ]
+  // Fetch publishers from API
+  const fetchPublishers = async () => {
+    try {
+      setPublishersLoading(true)
+      const response = await axios.get('/api/publishers')
+      
+      if (response.data.success) {
+        // Transform publisher data to react-select format
+        const publisherOptions = response.data.data.map(publisher => ({
+          value: publisher._id,
+          label: publisher.name,
+          logo: publisher.logo,
+          data: publisher
+        }))
+        setPublishers(publisherOptions)
+      } else {
+        console.error('Failed to fetch publishers:', response.data.message)
+        Swal.fire({
+          title: 'Error',
+          text: 'Failed to load publishers. Please refresh the page.',
+          icon: 'error'
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching publishers:', error)
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to load publishers. Please check your connection.',
+        icon: 'error'
+      })
+    } finally {
+      setPublishersLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // Simulate fetching publishers from API
-    setPublishers(mockPublishers)
+    // Fetch publishers when component mounts
+    fetchPublishers()
   }, [])
 
   // Function to upload image to ImgBB
@@ -225,6 +247,8 @@ const AddArticle = () => {
 
     if (!formData.publisher) {
       newErrors.publisher = 'Please select a publisher'
+    } else if (publishers.length === 0) {
+      newErrors.publisher = 'No publishers available. Please contact admin.'
     }
 
     if (formData.tags.length === 0) {
@@ -257,7 +281,8 @@ const AddArticle = () => {
       const articleData = {
         title: formData.title.trim(),
         image: formData.imageUrl, // Use the uploaded image URL from ImgBB
-        publisher: formData.publisher,
+        publisher: publishers.find(p => p.value === formData.publisher)?.label || formData.publisher,
+        publisherId: formData.publisher, // Store publisher ID for reference
         tags: formData.tags.map(tag => tag.value),
         description: formData.description.trim(),
         author: {
@@ -469,22 +494,62 @@ const AddArticle = () => {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Publisher *
                     </label>
-                    <Select
-                      options={publishers}
-                      value={publishers.find(p => p.value === formData.publisher) || null}
-                      onChange={handlePublisherChange}
-                      placeholder="Select a publisher..."
-                      styles={selectStyles}
-                      className={`react-select ${errors.publisher ? 'border-red-300' : ''}`}
-                      classNamePrefix="react-select"
-                      menuPortalTarget={document.body}
-                      menuPosition="fixed"
-                      menuPlacement="auto"
-                      isSearchable={true}
-                      isClearable={true}
-                    />
+                    {publishersLoading ? (
+                      <div className="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg bg-gray-50">
+                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                        <span className="text-gray-600 text-sm">Loading publishers...</span>
+                      </div>
+                    ) : (
+                      <Select
+                        options={publishers}
+                        value={publishers.find(p => p.value === formData.publisher) || null}
+                        onChange={handlePublisherChange}
+                        placeholder="Select a publisher..."
+                        styles={selectStyles}
+                        className={`react-select ${errors.publisher ? 'border-red-300' : ''}`}
+                        classNamePrefix="react-select"
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                        menuPlacement="auto"
+                        isSearchable={true}
+                        isClearable={true}
+                        formatOptionLabel={({ label, logo }) => (
+                          <div className="flex items-center">
+                            <img 
+                              src={logo} 
+                              alt={label}
+                              className="w-6 h-6 object-contain rounded mr-3"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                            <span>{label}</span>
+                          </div>
+                        )}
+                        components={{
+                          SingleValue: ({ children, data }) => (
+                            <div className="flex items-center">
+                              <img 
+                                src={data.logo} 
+                                alt={data.label}
+                                className="w-5 h-5 object-contain rounded mr-2"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                              <span>{children}</span>
+                            </div>
+                          )
+                        }}
+                      />
+                    )}
                     {errors.publisher && (
                       <p className="mt-2 text-sm text-red-600 animate-fade-in">{errors.publisher}</p>
+                    )}
+                    {!publishersLoading && publishers.length === 0 && (
+                      <p className="mt-2 text-sm text-yellow-600">
+                        No publishers available. Please contact admin to add publishers.
+                      </p>
                     )}
                   </div>
 
