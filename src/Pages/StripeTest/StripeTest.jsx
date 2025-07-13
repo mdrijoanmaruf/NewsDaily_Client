@@ -1,29 +1,25 @@
 import React from 'react';
 import { FaCreditCard, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import useAxios from '../../Hook/useAxios';
 
 const StripeTest = () => {
+  const axiosInstance = useAxios();
   const testStripeConnection = async () => {
     try {
       // Test Stripe publishable key
       const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
       console.log('Stripe Publishable Key:', publishableKey ? 'Set ✅' : 'Missing ❌');
-      
-      // Test backend connection
-      const response = await fetch('http://localhost:5000/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: 1,
-          email: 'test@test.com',
-          plan: 'test'
-        })
+
+      // Test backend connection using useAxios
+      const response = await axiosInstance.post('/api/create-payment-intent', {
+        amount: 1,
+        email: 'test@test.com',
+        plan: 'test'
       });
-      
-      const data = await response.json();
+
+      const data = response.data;
       console.log('Backend Response:', data);
-      
+
       if (data.success) {
         alert('✅ Stripe integration is working correctly!');
       } else {
@@ -31,7 +27,7 @@ const StripeTest = () => {
       }
     } catch (error) {
       console.error('Test failed:', error);
-      alert('❌ Connection test failed: ' + error.message);
+      alert('❌ Connection test failed: ' + (error.response?.data?.message || error.message));
     }
   };
 
