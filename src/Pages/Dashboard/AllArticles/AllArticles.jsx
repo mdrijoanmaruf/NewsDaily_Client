@@ -1,11 +1,13 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaEye, FaCheck, FaTimes, FaTrash, FaCrown, FaUser, FaEnvelope, FaCalendar, FaTag, FaNewspaper } from 'react-icons/fa';
 import useAxiosSecure from '../../../Hook/useAxiosSecure';
 import ComponentLoading from '../../../Shared/Loading/ComponentLoading';
+import Swal from 'sweetalert2';
 
 const AllArticles = () => {
   const axiosSecure = useAxiosSecure();
+  const queryClient = useQueryClient();
 
   // Fetch all articles using TanStack Query
   const { data: articles = [], isLoading, error, refetch } = useQuery({
@@ -17,6 +19,58 @@ const AllArticles = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 10 * 60 * 1000, // 10 minutes
   });
+
+  // Approve Article Mutation
+  const approveArticleMutation = useMutation({
+    mutationFn: async (articleId) => {
+      console.log('Making API call to approve article:', articleId);
+      const response = await axiosSecure.put(`/api/articles/${articleId}/approve`);
+      console.log('API response:', response.data);
+      return response.data;
+    },
+    onSuccess: () => {
+      console.log('Approve success');
+      // Invalidate and refetch articles
+      queryClient.invalidateQueries({ queryKey: ['allArticles'] });
+      Swal.fire({
+        title: 'Success!',
+        text: 'Article approved successfully!',
+        icon: 'success',
+        confirmButtonColor: '#3B82F6'
+      });
+    },
+    onError: (error) => {
+      console.error('Error approving article:', error);
+      console.error('Error response:', error.response);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to approve article';
+      Swal.fire({
+        title: 'Error!',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonColor: '#EF4444'
+      });
+    }
+  });
+
+  // Handle approve article
+  const handleApproveArticle = (article) => {
+    console.log('Approving article:', article._id, article.title);
+    Swal.fire({
+      title: 'Approve Article?',
+      text: `Are you sure you want to approve "${article.title}"?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10B981',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Yes, Approve!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        console.log('Mutation called with ID:', article._id);
+        approveArticleMutation.mutate(article._id);
+      }
+    });
+  };
 
   if (isLoading) return <ComponentLoading />;
 
@@ -51,6 +105,7 @@ const AllArticles = () => {
     const statusConfig = {
       'pending': { color: 'bg-yellow-100 text-yellow-800 border-yellow-300', icon: '⏳' },
       'approved': { color: 'bg-green-100 text-green-800 border-green-300', icon: '✅' },
+      'published': { color: 'bg-blue-100 text-blue-800 border-blue-300', icon: '📰' },
       'declined': { color: 'bg-red-100 text-red-800 border-red-300', icon: '❌' },
       'premium': { color: 'bg-purple-100 text-purple-800 border-purple-300', icon: '👑' }
     };
@@ -170,12 +225,16 @@ const AllArticles = () => {
                         >
                           <FaEye className="text-sm group-hover:scale-110 transition-transform" />
                         </button>
-                        <button 
-                          className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors group"
-                          title="Approve"
-                        >
-                          <FaCheck className="text-sm group-hover:scale-110 transition-transform" />
-                        </button>
+                        {article.status !== 'published' && (
+                          <button 
+                            className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors group"
+                            title="Approve"
+                            onClick={() => handleApproveArticle(article)}
+                            disabled={approveArticleMutation.isPending}
+                          >
+                            <FaCheck className={`text-sm group-hover:scale-110 transition-transform ${approveArticleMutation.isPending ? 'animate-spin' : ''}`} />
+                          </button>
+                        )}
                         <button 
                           className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors group"
                           title="Decline"
@@ -266,15 +325,21 @@ const AllArticles = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-5 gap-2">
+              <div className={`grid gap-2 ${article.status === 'published' ? 'grid-cols-4' : 'grid-cols-5'}`}>
                 <button className="flex flex-col items-center p-3 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
                   <FaEye className="text-lg mb-1" />
                   <span className="text-xs">View</span>
                 </button>
-                <button className="flex flex-col items-center p-3 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
-                  <FaCheck className="text-lg mb-1" />
-                  <span className="text-xs">Approve</span>
-                </button>
+                {article.status !== 'published' && (
+                  <button 
+                    className="flex flex-col items-center p-3 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                    onClick={() => handleApproveArticle(article)}
+                    disabled={approveArticleMutation.isPending}
+                  >
+                    <FaCheck className={`text-lg mb-1 ${approveArticleMutation.isPending ? 'animate-spin' : ''}`} />
+                    <span className="text-xs">Approve</span>
+                  </button>
+                )}
                 <button className="flex flex-col items-center p-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
                   <FaTimes className="text-lg mb-1" />
                   <span className="text-xs">Decline</span>
