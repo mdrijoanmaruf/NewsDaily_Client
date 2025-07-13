@@ -24,6 +24,7 @@
     "react-router-dom": "^7.6.3",
     "react-select": "^5.10.2",
     "sweetalert2": "^11.22.2",
+    "swiper": "^11.2.10",
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
