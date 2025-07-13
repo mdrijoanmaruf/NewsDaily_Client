@@ -41,7 +41,7 @@ export const router = createBrowserRouter([
             Component : Login
         },
         {
-            path: '/add-article',
+            path: '/add-articles',
             element: <PrivateRoute>
                 <AddArticle></AddArticle>
             </PrivateRoute>
