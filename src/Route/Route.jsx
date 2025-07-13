@@ -15,6 +15,7 @@ import AllUsers from "../Pages/Dashboard/AllUsers/AllUsers";
 import NotFound from "../Pages/NotFound/NotFound";
 import AllArticles from "../Pages/Dashboard/AllArticles/AllArticles";
 import AddPublisher from "../Pages/Dashboard/AddPublisher/AddPublisher";
+import AllArticlePage from "../Pages/AllArticlePage/AllArticlePage";
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +40,12 @@ export const router = createBrowserRouter([
                 <AddArticle></AddArticle>
             </PrivateRoute>
         },
+        {
+          path: '/all-articles',
+          element: <PrivateRoute>
+            <AllArticlePage></AllArticlePage>
+          </PrivateRoute>
+        }
     ]
   },
   {

@@ -130,6 +130,70 @@ const AllArticles = () => {
     }
   });
 
+  // Premium Article Mutation
+  const premiumArticleMutation = useMutation({
+    mutationFn: async (articleId) => {
+      console.log('Making API call to make article premium:', articleId);
+      const response = await axiosSecure.put(`/api/articles/${articleId}/premium`);
+      console.log('API response:', response.data);
+      return response.data;
+    },
+    onSuccess: () => {
+      console.log('Premium success');
+      // Invalidate and refetch articles
+      queryClient.invalidateQueries({ queryKey: ['allArticles'] });
+      Swal.fire({
+        title: 'Success!',
+        text: 'Article marked as premium successfully!',
+        icon: 'success',
+        confirmButtonColor: '#F59E0B'
+      });
+    },
+    onError: (error) => {
+      console.error('Error making article premium:', error);
+      console.error('Error response:', error.response);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to make article premium';
+      Swal.fire({
+        title: 'Error!',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonColor: '#EF4444'
+      });
+    }
+  });
+
+  // Remove Premium Mutation
+  const removePremiumMutation = useMutation({
+    mutationFn: async (articleId) => {
+      console.log('Making API call to remove premium status:', articleId);
+      const response = await axiosSecure.put(`/api/articles/${articleId}/remove-premium`);
+      console.log('API response:', response.data);
+      return response.data;
+    },
+    onSuccess: () => {
+      console.log('Remove premium success');
+      // Invalidate and refetch articles
+      queryClient.invalidateQueries({ queryKey: ['allArticles'] });
+      Swal.fire({
+        title: 'Success!',
+        text: 'Premium status removed successfully!',
+        icon: 'success',
+        confirmButtonColor: '#3B82F6'
+      });
+    },
+    onError: (error) => {
+      console.error('Error removing premium status:', error);
+      console.error('Error response:', error.response);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to remove premium status';
+      Swal.fire({
+        title: 'Error!',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonColor: '#EF4444'
+      });
+    }
+  });
+
   // Handle approve article
   const handleApproveArticle = (article) => {
     console.log('Approving article:', article._id, article.title);
@@ -172,6 +236,46 @@ const AllArticles = () => {
       if (result.isConfirmed) {
         console.log('Delete mutation called with ID:', article._id);
         deleteArticleMutation.mutate(article._id);
+      }
+    });
+  };
+
+  // Handle make premium
+  const handleMakePremium = (article) => {
+    console.log('Making article premium:', article._id, article.title);
+    Swal.fire({
+      title: 'Make Premium?',
+      text: `Are you sure you want to mark "${article.title}" as premium?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#F59E0B',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Yes, Make Premium!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        console.log('Premium mutation called with ID:', article._id);
+        premiumArticleMutation.mutate(article._id);
+      }
+    });
+  };
+
+  // Handle remove premium
+  const handleRemovePremium = (article) => {
+    console.log('Removing premium status:', article._id, article.title);
+    Swal.fire({
+      title: 'Remove Premium?',
+      text: `Are you sure you want to remove premium status from "${article.title}"?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3B82F6',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Yes, Remove Premium!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        console.log('Remove premium mutation called with ID:', article._id);
+        removePremiumMutation.mutate(article._id);
       }
     });
   };
@@ -230,13 +334,22 @@ const AllArticles = () => {
     });
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status, premium) => {
+    // If article is premium, show premium badge regardless of status
+    if (premium) {
+      return (
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-800 border-amber-300">
+          <span className="mr-1">👑</span>
+          Premium
+        </span>
+      );
+    }
+    
     const statusConfig = {
       'pending': { color: 'bg-yellow-100 text-yellow-800 border-yellow-300', icon: '⏳' },
       'approved': { color: 'bg-green-100 text-green-800 border-green-300', icon: '✅' },
       'published': { color: 'bg-blue-100 text-blue-800 border-blue-300', icon: '📰' },
-      'declined': { color: 'bg-red-100 text-red-800 border-red-300', icon: '❌' },
-      'premium': { color: 'bg-purple-100 text-purple-800 border-purple-300', icon: '👑' }
+      'declined': { color: 'bg-red-100 text-red-800 border-red-300', icon: '❌' }
     };
     
     const config = statusConfig[status?.toLowerCase()] || statusConfig.pending;
@@ -284,17 +397,32 @@ const AllArticles = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {articles.map((article, index) => (
-                  <tr key={article._id} className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                  <tr key={article._id} className={`hover:bg-blue-50 transition-colors ${
+                    article.premium 
+                      ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-l-4 border-amber-400' 
+                      : index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                  }`}>
                     {/* Article Info */}
                     <td className="px-6 py-4">
                       <div className="flex items-start space-x-3">
-                        <img 
-                          src={article.image || '/placeholder-article.jpg'} 
-                          alt={article.title}
-                          className="w-16 h-16 rounded-lg object-cover border-2 border-blue-200"
-                        />
+                        <div className="relative">
+                          <img 
+                            src={article.image || '/placeholder-article.jpg'} 
+                            alt={article.title}
+                            className={`w-16 h-16 rounded-lg object-cover border-2 ${
+                              article.premium ? 'border-amber-400 ring-2 ring-amber-200' : 'border-blue-200'
+                            }`}
+                          />
+                          {article.premium && (
+                            <div className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs px-1 py-0.5 rounded-full">
+                              👑
+                            </div>
+                          )}
+                        </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1">
+                          <h3 className={`font-semibold text-sm line-clamp-2 mb-1 ${
+                            article.premium ? 'text-amber-900' : 'text-gray-900'
+                          }`}>
                             {article.title}
                           </h3>
                           <div className="flex items-center text-xs text-gray-500">
@@ -311,14 +439,18 @@ const AllArticles = () => {
                         <img 
                           src={article.author?.photo || '/placeholder-user.jpg'} 
                           alt={article.author?.name || 'Author'}
-                          className="w-10 h-10 rounded-full border-2 border-blue-200"
+                          className={`w-10 h-10 rounded-full border-2 ${
+                            article.premium ? 'border-amber-300' : 'border-blue-200'
+                          }`}
                           onError={(e) => {
                             e.target.src = '/placeholder-user.jpg';
                           }}
                         />
                         <div>
-                          <div className="flex items-center text-sm font-medium text-gray-900">
-                            <FaUser className="mr-1 text-blue-600" />
+                          <div className={`flex items-center text-sm font-medium ${
+                            article.premium ? 'text-amber-900' : 'text-gray-900'
+                          }`}>
+                            <FaUser className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
                             {article.author?.name || 'Unknown Author'}
                           </div>
                           <div className="flex items-center text-xs text-gray-500">
@@ -333,11 +465,11 @@ const AllArticles = () => {
                     <td className="px-6 py-4">
                       <div className="space-y-1">
                         <div className="flex items-center text-xs text-gray-600">
-                          <FaCalendar className="mr-1 text-blue-600" />
+                          <FaCalendar className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
                           {formatDate(article.createdAt)}
                         </div>
                         <div className="flex items-center text-xs text-gray-600">
-                          <FaNewspaper className="mr-1 text-blue-600" />
+                          <FaNewspaper className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
                           {article.publisher || 'Not Assigned'}
                         </div>
                       </div>
@@ -345,7 +477,7 @@ const AllArticles = () => {
 
                     {/* Status */}
                     <td className="px-6 py-4">
-                      {getStatusBadge(article.status)}
+                      {getStatusBadge(article.status, article.premium)}
                     </td>
 
                     {/* Actions */}
@@ -377,12 +509,25 @@ const AllArticles = () => {
                           </button>
                         )}
                         {article.status !== 'declined' && (
-                          <button 
-                            className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors group"
-                            title="Make Premium"
-                          >
-                            <FaCrown className="text-sm group-hover:scale-110 transition-transform" />
-                          </button>
+                          article.premium ? (
+                            <button 
+                              className="p-2 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors group"
+                              title="Remove Premium"
+                              onClick={() => handleRemovePremium(article)}
+                              disabled={removePremiumMutation.isPending}
+                            >
+                              <FaCrown className={`text-sm group-hover:scale-110 transition-transform ${removePremiumMutation.isPending ? 'animate-spin' : ''}`} />
+                            </button>
+                          ) : (
+                            <button 
+                              className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors group"
+                              title="Make Premium"
+                              onClick={() => handleMakePremium(article)}
+                              disabled={premiumArticleMutation.isPending}
+                            >
+                              <FaCrown className={`text-sm group-hover:scale-110 transition-transform ${premiumArticleMutation.isPending ? 'animate-spin' : ''}`} />
+                            </button>
+                          )
                         )}
                         <button 
                           className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors group"
@@ -404,45 +549,68 @@ const AllArticles = () => {
         {/* Articles List - Mobile View */}
         <div className="lg:hidden space-y-4">
           {articles.map((article) => (
-            <div key={article._id} className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+            <div key={article._id} className={`rounded-lg shadow-md p-4 border ${
+              article.premium 
+                ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300 border-l-4 border-l-amber-500' 
+                : 'bg-white border-gray-200'
+            }`}>
               {/* Article Header */}
               <div className="flex items-start space-x-3 mb-4">
-                <img 
-                  src={article.image || '/placeholder-article.jpg'} 
-                  alt={article.title}
-                  className="w-20 h-20 rounded-lg object-cover border-2 border-blue-200"
-                />
+                <div className="relative">
+                  <img 
+                    src={article.image || '/placeholder-article.jpg'} 
+                    alt={article.title}
+                    className={`w-20 h-20 rounded-lg object-cover border-2 ${
+                      article.premium ? 'border-amber-400 ring-2 ring-amber-200' : 'border-blue-200'
+                    }`}
+                  />
+                  {article.premium && (
+                    <div className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs px-1 py-0.5 rounded-full">
+                      👑
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 text-lg mb-2 line-clamp-2">
+                  <h3 className={`font-semibold text-lg mb-2 line-clamp-2 ${
+                    article.premium ? 'text-amber-900' : 'text-gray-900'
+                  }`}>
                     {article.title}
                   </h3>
                   <div className="flex items-center text-sm text-gray-500 mb-2">
                     <FaTag className="mr-1" />
                     {article.category || 'General'}
                   </div>
-                  {getStatusBadge(article.status)}
+                  {getStatusBadge(article.status, article.premium)}
                 </div>
               </div>
 
               {/* Author Info */}
-              <div className="bg-blue-50 rounded-lg p-3 mb-4">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Author Information</h4>
+              <div className={`rounded-lg p-3 mb-4 ${
+                article.premium ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50'
+              }`}>
+                <h4 className={`text-sm font-semibold mb-2 ${
+                  article.premium ? 'text-amber-800' : 'text-gray-700'
+                }`}>Author Information</h4>
                 <div className="flex items-center space-x-3">
                   <img 
                     src={article.author?.photo || '/placeholder-user.jpg'} 
                     alt={article.author?.name || 'Author'}
-                    className="w-12 h-12 rounded-full border-2 border-blue-200"
+                    className={`w-12 h-12 rounded-full border-2 ${
+                      article.premium ? 'border-amber-300' : 'border-blue-200'
+                    }`}
                     onError={(e) => {
                       e.target.src = '/placeholder-user.jpg';
                     }}
                   />
                   <div>
-                    <div className="flex items-center text-sm font-medium text-gray-900 mb-1">
-                      <FaUser className="mr-1 text-blue-600" />
+                    <div className={`flex items-center text-sm font-medium mb-1 ${
+                      article.premium ? 'text-amber-900' : 'text-gray-900'
+                    }`}>
+                      <FaUser className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
                       {article.author?.name || 'Unknown Author'}
                     </div>
                     <div className="flex items-center text-xs text-gray-600">
-                      <FaEnvelope className="mr-1 text-blue-600" />
+                      <FaEnvelope className={`mr-1 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
                       {article.author?.email || 'No email'}
                     </div>
                   </div>
@@ -450,16 +618,20 @@ const AllArticles = () => {
               </div>
 
               {/* Article Details */}
-              <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Article Details</h4>
+              <div className={`rounded-lg p-3 mb-4 ${
+                article.premium ? 'bg-amber-50/50 border border-amber-200' : 'bg-gray-50'
+              }`}>
+                <h4 className={`text-sm font-semibold mb-2 ${
+                  article.premium ? 'text-amber-800' : 'text-gray-700'
+                }`}>Article Details</h4>
                 <div className="space-y-2">
                   <div className="flex items-center text-sm text-gray-600">
-                    <FaCalendar className="mr-2 text-blue-600" />
+                    <FaCalendar className={`mr-2 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
                     <span className="font-medium">Posted:</span>
                     <span className="ml-1">{formatDate(article.createdAt)}</span>
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
-                    <FaNewspaper className="mr-2 text-blue-600" />
+                    <FaNewspaper className={`mr-2 ${article.premium ? 'text-amber-600' : 'text-blue-600'}`} />
                     <span className="font-medium">Publisher:</span>
                     <span className="ml-1">{article.publisher || 'Not Assigned'}</span>
                   </div>
@@ -492,10 +664,25 @@ const AllArticles = () => {
                   </button>
                 )}
                 {article.status !== 'declined' && (
-                  <button className="flex flex-col items-center p-3 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
-                    <FaCrown className="text-lg mb-1" />
-                    <span className="text-xs">Premium</span>
-                  </button>
+                  article.premium ? (
+                    <button 
+                      className="flex flex-col items-center p-3 text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
+                      onClick={() => handleRemovePremium(article)}
+                      disabled={removePremiumMutation.isPending}
+                    >
+                      <FaCrown className={`text-lg mb-1 ${removePremiumMutation.isPending ? 'animate-spin' : ''}`} />
+                      <span className="text-xs">Remove Premium</span>
+                    </button>
+                  ) : (
+                    <button 
+                      className="flex flex-col items-center p-3 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                      onClick={() => handleMakePremium(article)}
+                      disabled={premiumArticleMutation.isPending}
+                    >
+                      <FaCrown className={`text-lg mb-1 ${premiumArticleMutation.isPending ? 'animate-spin' : ''}`} />
+                      <span className="text-xs">Make Premium</span>
+                    </button>
+                  )
                 )}
                 <button 
                   className="flex flex-col items-center p-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
