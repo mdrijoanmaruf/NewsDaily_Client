@@ -1,13 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaEye, FaCheck, FaTimes, FaTrash, FaCrown, FaUser, FaEnvelope, FaCalendar, FaTag, FaNewspaper } from 'react-icons/fa';
 import useAxiosSecure from '../../../Hook/useAxiosSecure';
+import useAuth from '../../../Hook/useAuth';
 import ComponentLoading from '../../../Shared/Loading/ComponentLoading';
 import Swal from 'sweetalert2';
 
 const AllArticles = () => {
   const axiosSecure = useAxiosSecure();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  
+  // State for decline modal
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [declineReason, setDeclineReason] = useState('');
 
   // Fetch all articles using TanStack Query
   const { data: articles = [], isLoading, error, refetch } = useQuery({
@@ -52,6 +59,45 @@ const AllArticles = () => {
     }
   });
 
+  // Decline Article Mutation
+  const declineArticleMutation = useMutation({
+    mutationFn: async ({ articleId, reason }) => {
+      console.log('Making API call to decline article:', articleId);
+      const response = await axiosSecure.put(`/api/articles/${articleId}/decline`, {
+        reason,
+        adminEmail: user?.email,
+        adminName: user?.displayName || user?.email
+      });
+      console.log('API response:', response.data);
+      return response.data;
+    },
+    onSuccess: () => {
+      console.log('Decline success');
+      // Invalidate and refetch articles
+      queryClient.invalidateQueries({ queryKey: ['allArticles'] });
+      setShowDeclineModal(false);
+      setDeclineReason('');
+      setSelectedArticle(null);
+      Swal.fire({
+        title: 'Success!',
+        text: 'Article declined successfully!',
+        icon: 'success',
+        confirmButtonColor: '#3B82F6'
+      });
+    },
+    onError: (error) => {
+      console.error('Error declining article:', error);
+      console.error('Error response:', error.response);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to decline article';
+      Swal.fire({
+        title: 'Error!',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonColor: '#EF4444'
+      });
+    }
+  });
+
   // Handle approve article
   const handleApproveArticle = (article) => {
     console.log('Approving article:', article._id, article.title);
@@ -70,6 +116,37 @@ const AllArticles = () => {
         approveArticleMutation.mutate(article._id);
       }
     });
+  };
+
+  // Handle decline article
+  const handleDeclineArticle = (article) => {
+    setSelectedArticle(article);
+    setShowDeclineModal(true);
+  };
+
+  // Handle decline confirmation
+  const handleDeclineConfirm = () => {
+    if (!declineReason.trim()) {
+      Swal.fire({
+        title: 'Error!',
+        text: 'Please provide a reason for declining the article.',
+        icon: 'error',
+        confirmButtonColor: '#EF4444'
+      });
+      return;
+    }
+
+    declineArticleMutation.mutate({
+      articleId: selectedArticle._id,
+      reason: declineReason.trim()
+    });
+  };
+
+  // Close decline modal
+  const closeDeclineModal = () => {
+    setShowDeclineModal(false);
+    setDeclineReason('');
+    setSelectedArticle(null);
   };
 
   if (isLoading) return <ComponentLoading />;
@@ -180,18 +257,21 @@ const AllArticles = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-3">
                         <img 
-                          src={article.authorPhoto || '/placeholder-user.jpg'} 
-                          alt={article.authorName}
+                          src={article.author?.photo || '/placeholder-user.jpg'} 
+                          alt={article.author?.name || 'Author'}
                           className="w-10 h-10 rounded-full border-2 border-blue-200"
+                          onError={(e) => {
+                            e.target.src = '/placeholder-user.jpg';
+                          }}
                         />
                         <div>
                           <div className="flex items-center text-sm font-medium text-gray-900">
                             <FaUser className="mr-1 text-blue-600" />
-                            {article.authorName}
+                            {article.author?.name || 'Unknown Author'}
                           </div>
                           <div className="flex items-center text-xs text-gray-500">
                             <FaEnvelope className="mr-1" />
-                            {article.authorEmail}
+                            {article.author?.email || 'No email'}
                           </div>
                         </div>
                       </div>
@@ -225,7 +305,7 @@ const AllArticles = () => {
                         >
                           <FaEye className="text-sm group-hover:scale-110 transition-transform" />
                         </button>
-                        {article.status !== 'published' && (
+                        {article.status !== 'published' && article.status !== 'declined' && (
                           <button 
                             className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors group"
                             title="Approve"
@@ -235,18 +315,23 @@ const AllArticles = () => {
                             <FaCheck className={`text-sm group-hover:scale-110 transition-transform ${approveArticleMutation.isPending ? 'animate-spin' : ''}`} />
                           </button>
                         )}
-                        <button 
-                          className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors group"
-                          title="Decline"
-                        >
-                          <FaTimes className="text-sm group-hover:scale-110 transition-transform" />
-                        </button>
-                        <button 
-                          className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors group"
-                          title="Make Premium"
-                        >
-                          <FaCrown className="text-sm group-hover:scale-110 transition-transform" />
-                        </button>
+                        {article.status !== 'published' && article.status !== 'declined' && (
+                          <button 
+                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors group"
+                            title="Decline"
+                            onClick={() => handleDeclineArticle(article)}
+                          >
+                            <FaTimes className="text-sm group-hover:scale-110 transition-transform" />
+                          </button>
+                        )}
+                        {article.status !== 'declined' && (
+                          <button 
+                            className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors group"
+                            title="Make Premium"
+                          >
+                            <FaCrown className="text-sm group-hover:scale-110 transition-transform" />
+                          </button>
+                        )}
                         <button 
                           className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors group"
                           title="Delete"
@@ -290,18 +375,21 @@ const AllArticles = () => {
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">Author Information</h4>
                 <div className="flex items-center space-x-3">
                   <img 
-                    src={article.authorPhoto || '/placeholder-user.jpg'} 
-                    alt={article.authorName}
+                    src={article.author?.photo || '/placeholder-user.jpg'} 
+                    alt={article.author?.name || 'Author'}
                     className="w-12 h-12 rounded-full border-2 border-blue-200"
+                    onError={(e) => {
+                      e.target.src = '/placeholder-user.jpg';
+                    }}
                   />
                   <div>
                     <div className="flex items-center text-sm font-medium text-gray-900 mb-1">
                       <FaUser className="mr-1 text-blue-600" />
-                      {article.authorName}
+                      {article.author?.name || 'Unknown Author'}
                     </div>
                     <div className="flex items-center text-xs text-gray-600">
                       <FaEnvelope className="mr-1 text-blue-600" />
-                      {article.authorEmail}
+                      {article.author?.email || 'No email'}
                     </div>
                   </div>
                 </div>
@@ -325,12 +413,12 @@ const AllArticles = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className={`grid gap-2 ${article.status === 'published' ? 'grid-cols-4' : 'grid-cols-5'}`}>
+              <div className={`grid gap-2 ${article.status === 'published' || article.status === 'declined' ? 'grid-cols-3' : 'grid-cols-5'}`}>
                 <button className="flex flex-col items-center p-3 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
                   <FaEye className="text-lg mb-1" />
                   <span className="text-xs">View</span>
                 </button>
-                {article.status !== 'published' && (
+                {article.status !== 'published' && article.status !== 'declined' && (
                   <button 
                     className="flex flex-col items-center p-3 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                     onClick={() => handleApproveArticle(article)}
@@ -340,14 +428,21 @@ const AllArticles = () => {
                     <span className="text-xs">Approve</span>
                   </button>
                 )}
-                <button className="flex flex-col items-center p-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
-                  <FaTimes className="text-lg mb-1" />
-                  <span className="text-xs">Decline</span>
-                </button>
-                <button className="flex flex-col items-center p-3 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
-                  <FaCrown className="text-lg mb-1" />
-                  <span className="text-xs">Premium</span>
-                </button>
+                {article.status !== 'published' && article.status !== 'declined' && (
+                  <button 
+                    className="flex flex-col items-center p-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                    onClick={() => handleDeclineArticle(article)}
+                  >
+                    <FaTimes className="text-lg mb-1" />
+                    <span className="text-xs">Decline</span>
+                  </button>
+                )}
+                {article.status !== 'declined' && (
+                  <button className="flex flex-col items-center p-3 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
+                    <FaCrown className="text-lg mb-1" />
+                    <span className="text-xs">Premium</span>
+                  </button>
+                )}
                 <button className="flex flex-col items-center p-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
                   <FaTrash className="text-lg mb-1" />
                   <span className="text-xs">Delete</span>
@@ -369,6 +464,89 @@ const AllArticles = () => {
             >
               Refresh
             </button>
+          </div>
+        )}
+
+        {/* Decline Modal */}
+        {showDeclineModal && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
+              <div className="p-6">
+                {/* Modal Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                    <FaTimes className="mr-2 text-red-500" />
+                    Decline Article
+                  </h3>
+                  <button
+                    onClick={closeDeclineModal}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <FaTimes className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Article Info */}
+                {selectedArticle && (
+                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium text-gray-900 text-sm mb-1">
+                      {selectedArticle.title}
+                    </h4>
+                    <p className="text-xs text-gray-600">
+                      By: {selectedArticle.author?.name || 'Unknown Author'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Reason Input */}
+                <div className="mb-6">
+                  <label htmlFor="declineReason" className="block text-sm font-medium text-gray-700 mb-2">
+                    Reason for Decline *
+                  </label>
+                  <textarea
+                    id="declineReason"
+                    value={declineReason}
+                    onChange={(e) => setDeclineReason(e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                    placeholder="Please provide a detailed reason for declining this article..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    The author will see this reason to understand why their article was declined.
+                  </p>
+                </div>
+
+                {/* Modal Actions */}
+                <div className="flex space-x-3">
+                  <button
+                    onClick={closeDeclineModal}
+                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                    disabled={declineArticleMutation.isPending}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeclineConfirm}
+                    disabled={declineArticleMutation.isPending || !declineReason.trim()}
+                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                      declineArticleMutation.isPending || !declineReason.trim()
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-red-600 hover:bg-red-700'
+                    } text-white`}
+                  >
+                    {declineArticleMutation.isPending ? (
+                      <div className="flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Declining...
+                      </div>
+                    ) : (
+                      'Decline Article'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

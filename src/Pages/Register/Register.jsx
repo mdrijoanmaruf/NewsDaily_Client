@@ -7,7 +7,7 @@ import Swal from 'sweetalert2'
 
 const Register = () => {
   const { createUser, signInWithGoogle } = useAuth()
-  const axiosSecure = useAxios()
+  const axios = useAxios()
   const navigate = useNavigate()
   
   const [formData, setFormData] = useState({
@@ -21,14 +21,17 @@ const Register = () => {
   const [errors, setErrors] = useState({})
   const [passwordErrors, setPasswordErrors] = useState([])
   const [loading, setLoading] = useState(false)
+  const [imagePreview, setImagePreview] = useState(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   // Upload photo to ImgBB
   const uploadPhotoToImgBB = async (photoFile) => {
     try {
+      setUploadingImage(true)
       const formData = new FormData()
       formData.append('image', photoFile)
       
-      const response = await fetch(`https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_IMGBB_API_KEY}`, {
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_ImgB_API_KEY}`, {
         method: 'POST',
         body: formData
       })
@@ -36,6 +39,7 @@ const Register = () => {
       const data = await response.json()
       
       if (data.success) {
+        setImagePreview(data.data.url)
         return data.data.url
       } else {
         throw new Error('Photo upload failed')
@@ -43,13 +47,15 @@ const Register = () => {
     } catch (error) {
       console.error('Error uploading photo:', error)
       throw error
+    } finally {
+      setUploadingImage(false)
     }
   }
 
   // Save user to database
   const saveUserToDatabase = async (userData) => {
     try {
-      const response = await axiosSecure.post('/api/users', userData)
+      const response = await axios.post('/api/users', userData)
       
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to save user data')
@@ -113,6 +119,19 @@ const Register = () => {
       ...prev,
       photo: file
     }))
+    
+    // Clear previous preview and upload to ImgBB immediately
+    setImagePreview(null)
+    if (file) {
+      uploadPhotoToImgBB(file).catch(error => {
+        console.error('Failed to upload image:', error)
+        Swal.fire({
+          title: 'Upload Failed',
+          text: 'Failed to upload image. Please try again.',
+          icon: 'error'
+        })
+      })
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -152,7 +171,7 @@ const Register = () => {
       const userData = {
         name: formData.name,
         email: formData.email,
-        profileImage: formData.photo ? await uploadPhotoToImgBB(formData.photo) : null,
+        profileImage: imagePreview, // Use the already uploaded image URL
         oauthProvider: null // Regular email/password signup
       }
       
@@ -343,18 +362,46 @@ const Register = () => {
                 <label htmlFor="photo" className="block text-sm font-medium text-gray-700 mb-1">
                   Profile Photo (Optional)
                 </label>
+                
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="mb-4 flex justify-center">
+                    <div className="relative">
+                      <img 
+                        src={imagePreview} 
+                        alt="Profile preview" 
+                        className="w-24 h-24 rounded-full object-cover border-4 border-blue-100 shadow-lg"
+                      />
+                      <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <label className={`flex flex-col items-center justify-center w-full ${imagePreview ? 'h-16' : 'h-24'} border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors`}>
                     <div className="flex items-center space-x-2 py-2">
-                      <FaCamera className="w-5 h-5 text-gray-400" />
-                      {formData.photo ? (
-                        <span className="text-sm text-gray-600 truncate max-w-32">
-                          {formData.photo.name}
-                        </span>
+                      {uploadingImage ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-sm text-blue-600">Uploading...</span>
+                        </>
                       ) : (
-                        <span className="text-sm text-gray-500">
-                          Click to upload photo
-                        </span>
+                        <>
+                          <FaCamera className="w-5 h-5 text-gray-400" />
+                          {formData.photo ? (
+                            <span className="text-sm text-gray-600 truncate max-w-32">
+                              {imagePreview ? 'Change photo' : formData.photo.name}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-500">
+                              Click to upload photo
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
                     <input
@@ -363,6 +410,7 @@ const Register = () => {
                       className="hidden"
                       accept="image/*"
                       onChange={handlePhotoChange}
+                      disabled={uploadingImage}
                     />
                   </label>
                 </div>
