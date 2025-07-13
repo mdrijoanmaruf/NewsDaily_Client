@@ -98,6 +98,38 @@ const AllArticles = () => {
     }
   });
 
+  // Delete Article Mutation
+  const deleteArticleMutation = useMutation({
+    mutationFn: async (articleId) => {
+      console.log('Making API call to delete article:', articleId);
+      const response = await axiosSecure.delete(`/api/articles/${articleId}`);
+      console.log('API response:', response.data);
+      return response.data;
+    },
+    onSuccess: () => {
+      console.log('Delete success');
+      // Invalidate and refetch articles
+      queryClient.invalidateQueries({ queryKey: ['allArticles'] });
+      Swal.fire({
+        title: 'Deleted!',
+        text: 'Article deleted successfully!',
+        icon: 'success',
+        confirmButtonColor: '#3B82F6'
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting article:', error);
+      console.error('Error response:', error.response);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete article';
+      Swal.fire({
+        title: 'Error!',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonColor: '#EF4444'
+      });
+    }
+  });
+
   // Handle approve article
   const handleApproveArticle = (article) => {
     console.log('Approving article:', article._id, article.title);
@@ -122,6 +154,26 @@ const AllArticles = () => {
   const handleDeclineArticle = (article) => {
     setSelectedArticle(article);
     setShowDeclineModal(true);
+  };
+
+  // Handle delete article
+  const handleDeleteArticle = (article) => {
+    console.log('Deleting article:', article._id, article.title);
+    Swal.fire({
+      title: 'Delete Article?',
+      text: `Are you sure you want to permanently delete "${article.title}"? This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Yes, Delete!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        console.log('Delete mutation called with ID:', article._id);
+        deleteArticleMutation.mutate(article._id);
+      }
+    });
   };
 
   // Handle decline confirmation
@@ -335,8 +387,10 @@ const AllArticles = () => {
                         <button 
                           className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors group"
                           title="Delete"
+                          onClick={() => handleDeleteArticle(article)}
+                          disabled={deleteArticleMutation.isPending}
                         >
-                          <FaTrash className="text-sm group-hover:scale-110 transition-transform" />
+                          <FaTrash className={`text-sm group-hover:scale-110 transition-transform ${deleteArticleMutation.isPending ? 'animate-spin' : ''}`} />
                         </button>
                       </div>
                     </td>
@@ -443,8 +497,12 @@ const AllArticles = () => {
                     <span className="text-xs">Premium</span>
                   </button>
                 )}
-                <button className="flex flex-col items-center p-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
-                  <FaTrash className="text-lg mb-1" />
+                <button 
+                  className="flex flex-col items-center p-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                  onClick={() => handleDeleteArticle(article)}
+                  disabled={deleteArticleMutation.isPending}
+                >
+                  <FaTrash className={`text-lg mb-1 ${deleteArticleMutation.isPending ? 'animate-spin' : ''}`} />
                   <span className="text-xs">Delete</span>
                 </button>
               </div>
