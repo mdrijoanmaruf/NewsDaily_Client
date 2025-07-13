@@ -1,15 +1,16 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../Hook/useAuth';
+import useUserRole from '../../Hook/useUserRole';
 import Swal from 'sweetalert2';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logOut } = useAuth()
+  const { userRole, isAdmin, isLoading: roleLoading } = useUserRole();
   
   // Derived states from user context
   const isLoggedIn = !!user // true if user exists
-  const isAdmin = false // TODO: Add admin check logic based on user role
   const hasSubscription = false // TODO: Add subscription check logic
   const userPhoto = user?.photoURL || null // Get user photo from auth
   const userName = user?.displayName || user?.email || 'User' // Get user name
@@ -57,8 +58,17 @@ const Navbar = () => {
     { to: "/add-articles", label: "Add Articles" },
     { to: "/all-articles", label: "All Articles" },
     { to: "/subscription", label: "Subscription" },
-    { to: "/my-articles", label: "My Articles" },
-    { to: "/dashboard", label: "Dashboard" }
+    { to: "/my-articles", label: "My Articles" }
+  ]
+
+  // Admin only navigation items
+  const adminItems = [
+    { 
+      to: "/dashboard", 
+      label: "Dashboard", 
+      condition: isAdmin,
+      badge: "ADMIN"
+    }
   ]
 
   // Conditional navigation items
@@ -106,6 +116,19 @@ const Navbar = () => {
                 {item.label}
               </Link>
             ))}
+            
+            {/* Admin Links */}
+            {adminItems.map((item) => 
+              item.condition && (
+                <Link 
+                  key={item.to}
+                  to={item.to} 
+                  className={linkStyles.desktop}
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
             
             {/* Conditional Links */}
             {conditionalItems.map((item) => 
@@ -204,6 +227,20 @@ const Navbar = () => {
                   {item.label}
                 </Link>
               ))}
+              
+              {/* Admin Links for Mobile */}
+              {adminItems.map((item) => 
+                item.condition && (
+                  <Link 
+                    key={item.to}
+                    to={item.to} 
+                    className={linkStyles.mobile}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              )}
               
               {/* Conditional Links for Mobile */}
               {conditionalItems.map((item) => 

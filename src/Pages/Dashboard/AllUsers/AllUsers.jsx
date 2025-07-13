@@ -1,29 +1,84 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useAxios from '../../../Hook/useAxios';
 import { FaUserShield, FaEnvelope, FaUsers, FaCrown } from 'react-icons/fa';
 import { HiOutlineSparkles } from 'react-icons/hi';
 import Swal from 'sweetalert2';
 
 const AllUsers = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const axios = useAxios();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
+  // Fetch all users using TanStack Query
+  const { data: users = [], isLoading, error } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
       const response = await axios.get('/api/users');
-      setUsers(response.data);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
+      return response.data;
     }
-  };
+  });
+
+  // Mutation for making user admin
+  const makeAdminMutation = useMutation({
+    mutationFn: async (userEmail) => {
+      const response = await axios.put(`/api/users/${userEmail}/make-admin`);
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch users data
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      
+      Swal.fire({
+        title: 'Success!',
+        text: 'User has been promoted to admin successfully.',
+        icon: 'success',
+        confirmButtonColor: '#3b82f6',
+        timer: 2000,
+        timerProgressBar: true
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating user role:', error);
+      
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to update user role. Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
+    }
+  });
+
+  // Mutation for removing admin role
+  const removeAdminMutation = useMutation({
+    mutationFn: async (userEmail) => {
+      const response = await axios.put(`/api/users/${userEmail}/remove-admin`);
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch users data
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      
+      Swal.fire({
+        title: 'Success!',
+        text: 'Admin role has been removed successfully.',
+        icon: 'success',
+        confirmButtonColor: '#3b82f6',
+        timer: 2000,
+        timerProgressBar: true
+      });
+    },
+    onError: (error) => {
+      console.error('Error removing admin role:', error);
+      
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to remove admin role. Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
+    }
+  });
 
   const handleMakeAdmin = async (userEmail) => {
     try {
@@ -40,39 +95,10 @@ const AllUsers = () => {
       });
 
       if (result.isConfirmed) {
-        const response = await axios.put(`/api/users/${userEmail}/make-admin`);
-        
-        if (response.data.success) {
-          // Update the users state to reflect the role change
-          setUsers(prevUsers => 
-            prevUsers.map(user => 
-              user.email === userEmail 
-                ? { ...user, role: 'admin', updatedAt: new Date().toISOString() }
-                : user
-            )
-          );
-          
-          // Show success message
-          Swal.fire({
-            title: 'Success!',
-            text: 'User has been promoted to admin successfully.',
-            icon: 'success',
-            confirmButtonColor: '#3b82f6',
-            timer: 2000,
-            timerProgressBar: true
-          });
-        }
+        makeAdminMutation.mutate(userEmail);
       }
     } catch (error) {
-      console.error('Error updating user role:', error);
-      
-      // Show error message
-      Swal.fire({
-        title: 'Error!',
-        text: 'Failed to update user role. Please try again.',
-        icon: 'error',
-        confirmButtonColor: '#ef4444'
-      });
+      console.error('Error in handleMakeAdmin:', error);
     }
   };
 
@@ -91,43 +117,14 @@ const AllUsers = () => {
       });
 
       if (result.isConfirmed) {
-        const response = await axios.put(`/api/users/${userEmail}/remove-admin`);
-        
-        if (response.data.success) {
-          // Update the users state to reflect the role change
-          setUsers(prevUsers => 
-            prevUsers.map(user => 
-              user.email === userEmail 
-                ? { ...user, role: 'user', updatedAt: new Date().toISOString() }
-                : user
-            )
-          );
-          
-          // Show success message
-          Swal.fire({
-            title: 'Success!',
-            text: 'Admin role has been removed successfully.',
-            icon: 'success',
-            confirmButtonColor: '#3b82f6',
-            timer: 2000,
-            timerProgressBar: true
-          });
-        }
+        removeAdminMutation.mutate(userEmail);
       }
     } catch (error) {
-      console.error('Error removing admin role:', error);
-      
-      // Show error message
-      Swal.fire({
-        title: 'Error!',
-        text: 'Failed to remove admin role. Please try again.',
-        icon: 'error',
-        confirmButtonColor: '#ef4444'
-      });
+      console.error('Error in handleRemoveAdmin:', error);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -140,6 +137,20 @@ const AllUsers = () => {
           <h3 className="text-lg font-medium bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
             Loading Users...
           </h3>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FaUsers className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-lg font-medium text-red-600 mb-2">Error Loading Users</h3>
+          <p className="text-gray-600">Failed to fetch users. Please try again later.</p>
         </div>
       </div>
     );
@@ -241,19 +252,21 @@ const AllUsers = () => {
                         {user.role !== 'admin' && (
                           <button
                             onClick={() => handleMakeAdmin(user.email)}
-                            className="inline-flex items-center justify-center px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-700 text-white text-xs font-medium rounded-lg hover:from-blue-600 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md w-full"
+                            disabled={makeAdminMutation.isPending}
+                            className="inline-flex items-center justify-center px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-700 text-white text-xs font-medium rounded-lg hover:from-blue-600 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <FaCrown className="w-3 h-3 mr-1" />
-                            Make Admin
+                            {makeAdminMutation.isPending ? 'Processing...' : 'Make Admin'}
                           </button>
                         )}
                         {user.role === 'admin' && (
                           <button
                             onClick={() => handleRemoveAdmin(user.email)}
-                            className="inline-flex items-center justify-center px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-700 text-white text-xs font-medium rounded-lg hover:from-red-600 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md w-full"
+                            disabled={removeAdminMutation.isPending}
+                            className="inline-flex items-center justify-center px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-700 text-white text-xs font-medium rounded-lg hover:from-red-600 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md w-full disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <FaCrown className="w-3 h-3 mr-1" />
-                            Remove Admin
+                            {removeAdminMutation.isPending ? 'Processing...' : 'Remove Admin'}
                           </button>
                         )}
                       </div>
@@ -344,19 +357,25 @@ const AllUsers = () => {
                       {user.role !== 'admin' && (
                         <button
                           onClick={() => handleMakeAdmin(user.email)}
-                          className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-blue-500 to-blue-700 text-white text-xs font-medium rounded-lg hover:from-blue-600 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+                          disabled={makeAdminMutation.isPending}
+                          className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-blue-500 to-blue-700 text-white text-xs font-medium rounded-lg hover:from-blue-600 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         >
                           <FaCrown className="w-3 h-3 sm:mr-1" />
-                          <span className="hidden sm:inline ml-1">Make Admin</span>
+                          <span className="hidden sm:inline ml-1">
+                            {makeAdminMutation.isPending ? 'Processing...' : 'Make Admin'}
+                          </span>
                         </button>
                       )}
                       {user.role === 'admin' && (
                         <button
                           onClick={() => handleRemoveAdmin(user.email)}
-                          className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-red-500 to-red-700 text-white text-xs font-medium rounded-lg hover:from-red-600 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+                          disabled={removeAdminMutation.isPending}
+                          className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-red-500 to-red-700 text-white text-xs font-medium rounded-lg hover:from-red-600 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         >
                           <FaCrown className="w-3 h-3 sm:mr-1" />
-                          <span className="hidden sm:inline ml-1">Remove Admin</span>
+                          <span className="hidden sm:inline ml-1">
+                            {removeAdminMutation.isPending ? 'Processing...' : 'Remove Admin'}
+                          </span>
                         </button>
                       )}
                     </td>
@@ -367,7 +386,7 @@ const AllUsers = () => {
           </div>
 
           {/* Empty State */}
-          {users.length === 0 && !loading && (
+          {users.length === 0 && !isLoading && (
             <div className="text-center py-8 sm:py-10 px-4">
               <div className="bg-gradient-to-r from-blue-100 to-blue-200 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center mx-auto mb-3">
                 <FaUsers className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
