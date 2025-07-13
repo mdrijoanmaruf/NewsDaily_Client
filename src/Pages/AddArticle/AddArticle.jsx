@@ -547,7 +547,7 @@ const AddArticle = () => {
                 </div>
 
                 {/* Submit Button */}
-                <div className="pt-6" data-aos="zoom-in" data-aos-duration="800" data-aos-delay="800">
+                <div className="pt-6" >
                   <button
                     type="submit"
                     disabled={loading || imageUploading}
@@ -677,7 +677,7 @@ const AddArticle = () => {
               </div>
 
               {/* Tips Section */}
-              <div className="mt-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white" data-aos="fade-up" data-aos-duration="800" data-aos-delay="700">
+              <div className="mt-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white" data-aos="fade-up" data-aos-duration="800" data-aos-delay="100">
                 <h3 className="font-semibold mb-3 flex items-center">
                   <FaTags className="mr-2" />
                   Writing Tips

@@ -57,16 +57,12 @@ const Navbar = () => {
     { to: "/add-articles", label: "Add Articles" },
     { to: "/all-articles", label: "All Articles" },
     { to: "/subscription", label: "Subscription" },
-    { to: "/my-articles", label: "My Articles" }
+    { to: "/my-articles", label: "My Articles" },
+    { to: "/dashboard", label: "Dashboard" }
   ]
 
   // Conditional navigation items
   const conditionalItems = [
-    { 
-      to: "/dashboard", 
-      label: "Dashboard", 
-    //   condition: isAdmin 
-    },
     { 
       to: "/premium-articles", 
       label: "Premium Articles", 
