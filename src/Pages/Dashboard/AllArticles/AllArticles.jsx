@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaEye, FaCheck, FaTimes, FaTrash, FaCrown, FaUser, FaEnvelope, FaCalendar, FaTag, FaNewspaper } from 'react-icons/fa';
 import useAxiosSecure from '../../../Hook/useAxiosSecure';
 import useAuth from '../../../Hook/useAuth';
 import ComponentLoading from '../../../Shared/Loading/ComponentLoading';
 import Swal from 'sweetalert2';
+import AOS from 'aos';
 
 const AllArticles = () => {
   const axiosSecure = useAxiosSecure();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  
+  // Initialize AOS
+  useEffect(() => {
+    AOS.init({
+      duration: 800,
+      once: false,
+      mirror: true,
+      easing: 'ease-out-back'
+    });
+  }, []);
   
   // State for decline modal
   const [showDeclineModal, setShowDeclineModal] = useState(false);
@@ -25,6 +36,12 @@ const AllArticles = () => {
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 10 * 60 * 1000, // 10 minutes
+    onSuccess: () => {
+      // Refresh AOS when articles load
+      setTimeout(() => {
+        AOS.refresh();
+      }, 100);
+    }
   });
 
   // Approve Article Mutation
@@ -310,7 +327,7 @@ const AllArticles = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center p-8 bg-red-50 rounded-lg border border-red-200">
+        <div className="text-center p-8 bg-red-50 rounded-lg border border-red-200" data-aos="fade-in">
           <div className="text-red-600 text-xl mb-2">⚠️ Error Loading Articles</div>
           <p className="text-red-700 mb-4">Failed to load articles. Please try again.</p>
           <button 
@@ -365,7 +382,7 @@ const AllArticles = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6" data-aos="fade-down" data-aos-duration="600">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -376,14 +393,14 @@ const AllArticles = () => {
                 <p className="text-gray-600">Manage and review all submitted articles</p>
               </div>
             </div>
-            <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+            <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200" data-aos="fade-left" data-aos-delay="300">
               <span className="text-blue-800 font-semibold">Total Articles: {articles.length}</span>
             </div>
           </div>
         </div>
 
         {/* Articles List - Desktop View */}
-        <div className="hidden lg:block bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="hidden lg:block bg-white rounded-lg shadow-md overflow-hidden" data-aos="fade-up" data-aos-delay="400">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
@@ -397,7 +414,12 @@ const AllArticles = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {articles.map((article, index) => (
-                  <tr key={article._id} className={`hover:bg-blue-50 transition-colors ${
+                  <tr 
+                    key={article._id} 
+                    data-aos="fade-up" 
+                    data-aos-delay={100 + (index * 30)} 
+                    data-aos-anchor-placement="top-bottom"
+                    className={`hover:bg-blue-50 transition-colors ${
                     article.premium 
                       ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-l-4 border-amber-400' 
                       : index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
@@ -548,8 +570,12 @@ const AllArticles = () => {
 
         {/* Articles List - Mobile View */}
         <div className="lg:hidden space-y-4">
-          {articles.map((article) => (
-            <div key={article._id} className={`rounded-lg shadow-md p-4 border ${
+          {articles.map((article, index) => (
+            <div 
+              key={article._id} 
+              data-aos="fade-up" 
+              data-aos-delay={150 + (index * 50)}
+              className={`rounded-lg shadow-md p-4 border ${
               article.premium 
                 ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300 border-l-4 border-l-amber-500' 
                 : 'bg-white border-gray-200'
@@ -699,7 +725,7 @@ const AllArticles = () => {
 
         {/* Empty State */}
         {articles.length === 0 && (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-white rounded-lg shadow-md p-12 text-center" data-aos="zoom-in" data-aos-delay="300">
             <div className="text-6xl mb-4">📰</div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">No Articles Found</h3>
             <p className="text-gray-600 mb-4">There are no articles to display at the moment.</p>
@@ -716,7 +742,7 @@ const AllArticles = () => {
         {showDeclineModal && (
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all" data-aos="zoom-in" data-aos-duration="300">
               <div className="p-6">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between mb-4">

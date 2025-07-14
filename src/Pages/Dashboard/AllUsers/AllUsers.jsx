@@ -1,13 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useAxios from '../../../Hook/useAxios';
 import { FaUserShield, FaEnvelope, FaUsers, FaCrown } from 'react-icons/fa';
 import { HiOutlineSparkles } from 'react-icons/hi';
 import Swal from 'sweetalert2';
+import AOS from 'aos';
 
 const AllUsers = () => {
   const axios = useAxios();
   const queryClient = useQueryClient();
+
+  // Initialize AOS
+  useEffect(() => {
+    AOS.init({
+      duration: 800,
+      once: false,
+      mirror: true,
+      easing: 'ease-in-out'
+    });
+  }, []);
 
   // Fetch all users using TanStack Query
   const { data: users = [], isLoading, error } = useQuery({
@@ -15,6 +26,12 @@ const AllUsers = () => {
     queryFn: async () => {
       const response = await axios.get('/api/users');
       return response.data;
+    },
+    onSuccess: () => {
+      // Refresh AOS when users load
+      setTimeout(() => {
+        AOS.refresh();
+      }, 100);
     }
   });
 
@@ -127,7 +144,7 @@ const AllUsers = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center" data-aos="fade-in">
           <div className="relative w-16 h-16 mx-auto mb-4">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-700 rounded-full blur-xl opacity-30 animate-pulse"></div>
             <div className="relative bg-white rounded-full p-4 shadow-2xl">
@@ -145,7 +162,7 @@ const AllUsers = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center" data-aos="zoom-in">
           <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <FaUsers className="w-8 h-8 text-red-600" />
           </div>
@@ -160,7 +177,7 @@ const AllUsers = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-4 sm:mb-6" data-aos="fade-down" data-aos-duration="600">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
             <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-2 sm:p-3 rounded-xl shadow-lg w-fit">
               <FaUsers className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
@@ -174,7 +191,7 @@ const AllUsers = () => {
           </div>
           
           {/* Stats Card */}
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-5 border border-blue-100">
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-5 border border-blue-100" data-aos="fade-up" data-aos-delay="200">
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-2 sm:p-3 rounded-lg">
                 <HiOutlineSparkles className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
@@ -188,7 +205,7 @@ const AllUsers = () => {
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-lg sm:rounded-xl shadow-lg overflow-hidden border border-blue-100">
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-lg overflow-hidden border border-blue-100" data-aos="fade-up" data-aos-delay="300">
           <div className="bg-gradient-to-r from-blue-500 to-blue-700 px-4 sm:px-6 py-3">
             <h2 className="text-base sm:text-lg font-medium text-white flex items-center gap-2">
               <FaUserShield className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -202,6 +219,8 @@ const AllUsers = () => {
               <div 
                 key={user._id} 
                 className="border-b border-blue-100 p-4 hover:bg-blue-50 transition-colors duration-200"
+                data-aos="fade-up"
+                data-aos-delay={100 + (index * 50)}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="flex items-start gap-3">
@@ -300,6 +319,9 @@ const AllUsers = () => {
                 {users.map((user, index) => (
                   <tr 
                     key={user._id} 
+                    data-aos="fade-up"
+                    data-aos-delay={100 + (index * 30)}
+                    data-aos-anchor-placement="top-bottom"
                     className="hover:bg-blue-50 transition-colors duration-200"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
@@ -387,7 +409,7 @@ const AllUsers = () => {
 
           {/* Empty State */}
           {users.length === 0 && !isLoading && (
-            <div className="text-center py-8 sm:py-10 px-4">
+            <div className="text-center py-8 sm:py-10 px-4" data-aos="zoom-in" data-aos-delay="300">
               <div className="bg-gradient-to-r from-blue-100 to-blue-200 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center mx-auto mb-3">
                 <FaUsers className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
@@ -398,7 +420,7 @@ const AllUsers = () => {
         </div>
 
         {/* Footer Info */}
-        <div className="mt-3 sm:mt-4 text-center text-xs text-gray-500">
+        <div className="mt-3 sm:mt-4 text-center text-xs text-gray-500" data-aos="fade-up" data-aos-delay="500">
           <p>Total {users.length} user{users.length !== 1 ? 's' : ''} registered</p>
         </div>
       </div>

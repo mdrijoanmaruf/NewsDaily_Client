@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { FaNewspaper, FaImage, FaUpload, FaSpinner, FaCheckCircle, FaTrash, FaEdit } from 'react-icons/fa';
 import useAxiosSecure from '../../../Hook/useAxiosSecure';
 import Swal from 'sweetalert2';
+import AOS from 'aos';
 
 const AddPublisher = () => {
   const axiosSecure = useAxiosSecure();
   const queryClient = useQueryClient();
+  
+  // Initialize AOS
+  useEffect(() => {
+    AOS.init({
+      duration: 800,
+      once: false,
+      mirror: true,
+      easing: 'ease-in-out'
+    });
+  }, []);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -26,6 +37,12 @@ const AddPublisher = () => {
       return response.data.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    onSuccess: () => {
+      // Refresh AOS when data loads
+      setTimeout(() => {
+        AOS.refresh();
+      }, 100);
+    }
   });
 
   // Add Publisher Mutation
@@ -226,7 +243,7 @@ const AddPublisher = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6">
       <div className="">
         {/* Header Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6" data-aos="fade-down" data-aos-duration="600">
           <div className="flex items-center space-x-3 mb-4">
             <div className="p-2 bg-blue-100 rounded-lg">
               <FaNewspaper className="text-2xl text-blue-600" />
@@ -239,10 +256,10 @@ const AddPublisher = () => {
         </div>
 
         {/* Form Section */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md p-6" data-aos="fade-up" data-aos-delay="200">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Publisher Name Field */}
-            <div>
+            <div data-aos="fade-right" data-aos-delay="300">
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                 Publisher Name *
               </label>
@@ -262,7 +279,7 @@ const AddPublisher = () => {
             </div>
 
             {/* Publisher Logo Field */}
-            <div>
+            <div data-aos="fade-left" data-aos-delay="400">
               <label htmlFor="logo" className="block text-sm font-medium text-gray-700 mb-2">
                 Publisher Logo *
               </label>
@@ -270,7 +287,7 @@ const AddPublisher = () => {
               {/* Upload Area */}
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                 {logoPreview ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4" data-aos="zoom-in" data-aos-anchor-placement="center-bottom">
                     <img 
                       src={logoPreview} 
                       alt="Publisher Logo Preview" 
@@ -340,7 +357,7 @@ const AddPublisher = () => {
             </div>
 
             {/* Submit Button */}
-            <div className="pt-4">
+            <div className="pt-4" data-aos="fade-up" data-aos-delay="500">
               <button
                 type="submit"
                 disabled={addPublisherMutation.isPending || isUploading || !formData.name.trim() || !formData.logo}
@@ -363,7 +380,7 @@ const AddPublisher = () => {
           </form>
 
           {/* Info Box */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200" data-aos="fade-up" data-aos-delay="600">
             <div className="flex items-start space-x-3">
               <FaNewspaper className="text-blue-600 mt-1" />
               <div>
@@ -378,7 +395,7 @@ const AddPublisher = () => {
         </div>
 
         {/* All Publishers Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+        <div className="bg-white rounded-lg shadow-md p-6 mt-6" data-aos="fade-up" data-aos-delay="700">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -397,24 +414,27 @@ const AddPublisher = () => {
           </div>
 
           {isLoadingPublishers ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-12" data-aos="fade">
               <div className="flex items-center space-x-3 text-gray-600">
                 <FaSpinner className="animate-spin text-xl" />
                 <span>Loading publishers...</span>
               </div>
             </div>
           ) : publishers.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12" data-aos="zoom-in">
               <div className="text-4xl mb-4">📰</div>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">No Publishers Found</h3>
               <p className="text-gray-600">Add your first publisher using the form above.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {publishers.map((publisher) => (
+              {publishers.map((publisher, index) => (
                 <div 
                   key={publisher._id} 
                   className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-gray-50"
+                  data-aos="fade-up"
+                  data-aos-delay={100 + (index * 50)}
+                  data-aos-offset="10"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3 flex-1">

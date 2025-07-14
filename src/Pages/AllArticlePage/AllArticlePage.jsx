@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { FaSearch, FaNewspaper, FaUser, FaCalendar, FaTag, FaEye, FaCrown, FaLock } from 'react-icons/fa';
@@ -6,6 +6,7 @@ import useAxios from '../../Hook/useAxios';
 import useAuth from '../../Hook/useAuth';
 import ComponentLoading from '../../Shared/Loading/ComponentLoading';
 import Swal from 'sweetalert2';
+import AOS from 'aos';
 
 const AllArticlePage = () => {
   const navigate = useNavigate();
@@ -13,6 +14,15 @@ const AllArticlePage = () => {
   const { user, isPremium } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  
+  // Initialize AOS
+  useEffect(() => {
+    AOS.init({
+      duration: 800,
+      once: false,
+      mirror: true,
+    });
+  }, []);
 
   // Fetch published articles only
   const { data: articles = [], isLoading, error, refetch } = useQuery({
@@ -26,6 +36,13 @@ const AllArticlePage = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 10 * 60 * 1000, // 10 minutes
   });
+
+  // Refresh AOS when articles load
+  useEffect(() => {
+    if (articles.length > 0) {
+      AOS.refresh();
+    }
+  }, [articles]);
 
   // Filter articles based on search and category
   const filteredArticles = articles.filter(article => {
@@ -86,7 +103,7 @@ const AllArticlePage = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center p-8 bg-red-50 rounded-lg border border-red-200">
+        <div className="text-center p-8 bg-red-50 rounded-lg border border-red-200" data-aos="fade-up">
           <div className="text-red-600 text-xl mb-2">⚠️ Error Loading Articles</div>
           <p className="text-red-700 mb-4">Failed to load articles. Please try again.</p>
           <button 
@@ -105,7 +122,7 @@ const AllArticlePage = () => {
       <div className="max-w-7xl mx-auto">
         
         {/* Header Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8" data-aos="fade-down">
           <div className="text-center mb-6">
             <div className="flex items-center justify-center mb-4">
               <FaNewspaper className="text-4xl text-blue-600 mr-3" />
@@ -117,7 +134,7 @@ const AllArticlePage = () => {
           </div>
 
           {/* Search and Filter Section */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between" data-aos="fade-up" data-aos-delay="100">
             {/* Search Bar */}
             <div className="relative flex-1 max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -160,14 +177,18 @@ const AllArticlePage = () => {
         {/* Articles Grid */}
         {filteredArticles.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredArticles.map((article) => (
+            {filteredArticles.map((article, index) => (
               <div
                 key={article._id}
-                className={`group relative rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${
+                data-aos="fade-up"
+                data-aos-delay={index * 50}
+                data-aos-duration="800"
+                className={`group relative rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transform-gpu transition-all duration-300 ease-in-out hover:-translate-y-1 ${
                   article.premium
                     ? 'bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 border border-amber-300'
                     : 'bg-white border border-gray-200'
                 }`}
+                style={{ willChange: 'transform' }}
               >
                 {/* Premium Badge */}
                 {article.premium && (
@@ -285,7 +306,7 @@ const AllArticlePage = () => {
           </div>
         ) : (
           // Empty State
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-white rounded-lg shadow-md p-12 text-center" data-aos="fade-up">
             <div className="text-6xl mb-4">📰</div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">No Articles Found</h3>
             <p className="text-gray-600 mb-4">
@@ -309,7 +330,7 @@ const AllArticlePage = () => {
 
         {/* Premium Articles Info Section */}
         {articles.some(article => article.premium) && (
-          <div className="mt-8 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-6">
+          <div className="mt-8 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-6" data-aos="fade-up" data-aos-delay="200">
             <div className="flex items-start">
               <div className="flex-shrink-0">
                 <FaCrown className="h-6 w-6 text-amber-600" />

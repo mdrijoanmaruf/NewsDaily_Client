@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCrown, FaCheck, FaStar, FaNewspaper, FaEye, FaHeart, FaShieldAlt, FaBolt, FaRocket } from 'react-icons/fa';
 import useAuth from '../../Hook/useAuth';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 const Subscription = () => {
   const navigate = useNavigate();
   const { user, isPremium } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState('5-days');
+
+  // Initialize AOS
+  useEffect(() => {
+    AOS.init({
+      duration: 800,
+      once: true,
+      easing: 'ease-out-cubic',
+      offset: 100
+    });
+  }, []);
 
   // Check if user is currently premium (using the real-time status from AuthProvider)
   const isPremiumUser = isPremium;
@@ -121,25 +133,25 @@ const Subscription = () => {
         <div className="absolute inset-0 bg-black opacity-20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
           <div className="text-center">
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-6" data-aos="zoom-in">
               <div className="relative">
                 <FaCrown className="text-6xl sm:text-7xl lg:text-8xl text-yellow-400 animate-pulse" />
                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full animate-ping"></div>
               </div>
             </div>
             
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight" data-aos="fade-up" data-aos-delay="100">
               Unlock Premium
               <span className="block bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
                 Content Experience
               </span>
             </h1>
             
-            <p className="text-xl sm:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed opacity-90">
+            <p className="text-xl sm:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed opacity-90" data-aos="fade-up" data-aos-delay="200">
               Get exclusive access to premium articles, ad-free reading, and early access to the latest news that matters most.
             </p>
             
-            <div className="flex flex-wrap justify-center gap-6 sm:gap-8 text-sm sm:text-base">
+            <div className="flex flex-wrap justify-center gap-6 sm:gap-8 text-sm sm:text-base" data-aos="fade-up" data-aos-delay="300">
               <div className="flex items-center">
                 <FaShieldAlt className="mr-2 text-green-400" />
                 <span>Premium Content</span>
@@ -164,7 +176,7 @@ const Subscription = () => {
 
       {/* Current Status Banner */}
       {isPremiumUser && (
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4">
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4" data-aos="fade-down">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-center">
               <FaCrown className="mr-3 text-yellow-400" />
@@ -180,7 +192,7 @@ const Subscription = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         
         {/* Section Header */}
-        <div className="relative text-center mb-16">
+        <div className="relative text-center mb-16" data-aos="fade-down">
           {/* Bullet Points in Top Right */}
           <div className="absolute top-0 right-0 flex space-x-2">
             <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
@@ -198,7 +210,7 @@ const Subscription = () => {
 
         {/* Plan Selection */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          {subscriptionPlans.map((plan) => {
+          {subscriptionPlans.map((plan, index) => {
             const colors = getColorClasses(plan.color);
             const isSelected = selectedPlan === plan.id;
             
@@ -248,66 +260,162 @@ const Subscription = () => {
         </div>
 
         {/* Selected Plan Summary */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="flex-1">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                Selected Plan: {selectedPlanData.duration}
-              </h3>
-              <p className="text-gray-600 mb-4">{selectedPlanData.description}</p>
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-12" data-aos="fade-up" data-aos-delay="300">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="col-span-2">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Your Selected Plan</h3>
+              <p className="text-gray-600 mb-6">
+                You've selected the <span className="font-semibold">{selectedPlanData.duration}</span> premium subscription plan.
+                This will give you full access to all premium features for {selectedPlanData.duration.toLowerCase()}.
+              </p>
               
-              <div className="flex items-center space-x-6">
-                <div>
-                  <span className="text-3xl font-bold text-gray-900">${selectedPlanData.price}</span>
-                  <span className="text-gray-500 line-through ml-2">${selectedPlanData.originalPrice}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-500 mb-1">Duration</p>
+                  <p className="text-lg font-medium text-gray-900">{selectedPlanData.duration}</p>
                 </div>
-                <div className="flex items-center text-green-600">
-                  <FaHeart className="mr-1" />
-                  <span className="font-medium">Save ${(selectedPlanData.originalPrice - selectedPlanData.price).toFixed(2)}</span>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-500 mb-1">Price</p>
+                  <p className="text-lg font-medium text-gray-900">${selectedPlanData.price}</p>
                 </div>
               </div>
             </div>
-
-            <div className="lg:text-right">
+            
+            <div className="flex flex-col justify-center items-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
+              <div className="text-center mb-6">
+                <FaCrown className="text-5xl text-yellow-400 mx-auto mb-4" />
+                <h4 className="text-xl font-bold text-gray-900 mb-2">Ready to Upgrade?</h4>
+                <p className="text-gray-600">Unlock premium content now</p>
+              </div>
+              
               <button
                 onClick={handleSubscribe}
                 disabled={isPremiumUser}
-                className={`w-full lg:w-auto px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg ${
+                className={`w-full py-3 px-6 rounded-lg text-white font-medium transition-colors flex items-center justify-center ${
                   isPremiumUser
-                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                    : `${getColorClasses(selectedPlanData.color).button} text-white hover:shadow-xl`
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : `${getColorClasses(selectedPlanData.color).button}`
                 }`}
               >
-                {isPremiumUser ? 'Already Premium' : `Subscribe for $${selectedPlanData.price}`}
+                {isPremiumUser ? 'Already Premium' : 'Subscribe Now'}
               </button>
               
-              {!isPremiumUser && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Secure payment • Cancel anytime
+              {isPremiumUser && (
+                <p className="text-sm text-gray-500 mt-2 text-center">
+                  You already have an active subscription
                 </p>
               )}
             </div>
           </div>
         </div>
 
-        {/* Features Showcase */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center p-6 bg-white rounded-xl shadow-md">
-            <FaNewspaper className="text-4xl text-blue-600 mx-auto mb-4" />
-            <h4 className="text-xl font-bold text-gray-900 mb-2">Premium Articles</h4>
-            <p className="text-gray-600">Access exclusive content from top journalists and industry experts.</p>
-          </div>
+        {/* Benefits Section */}
+        <div className="mb-12" data-aos="fade-up" data-aos-delay="100">
+          <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">Premium Benefits</h3>
           
-          <div className="text-center p-6 bg-white rounded-xl shadow-md">
-            <FaEye className="text-4xl text-green-600 mx-auto mb-4" />
-            <h4 className="text-xl font-bold text-gray-900 mb-2">Ad-Free Experience</h4>
-            <p className="text-gray-600">Enjoy uninterrupted reading without any advertisements.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                icon: FaNewspaper,
+                title: 'Exclusive Content',
+                description: 'Access premium articles and features not available to regular users.',
+                color: 'text-blue-600 bg-blue-100'
+              },
+              {
+                icon: FaEye,
+                title: 'Ad-Free Experience',
+                description: 'Enjoy a clean, distraction-free reading experience without ads.',
+                color: 'text-green-600 bg-green-100'
+              },
+              {
+                icon: FaBolt,
+                title: 'Early Access',
+                description: 'Get early access to breaking news and special features.',
+                color: 'text-amber-600 bg-amber-100'
+              },
+              {
+                icon: FaHeart,
+                title: 'Support Quality Journalism',
+                description: 'Your subscription helps fund in-depth reporting and quality content.',
+                color: 'text-red-600 bg-red-100'
+              },
+              {
+                icon: FaShieldAlt,
+                title: 'Enhanced Security',
+                description: 'Premium accounts get additional security features and protections.',
+                color: 'text-purple-600 bg-purple-100'
+              },
+              {
+                icon: FaRocket,
+                title: 'Faster Performance',
+                description: 'Experience optimized loading times and better performance.',
+                color: 'text-indigo-600 bg-indigo-100'
+              }
+            ].map((benefit, index) => (
+              <div 
+                key={benefit.title} 
+                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
+                data-aos="zoom-in"
+                data-aos-delay={index * 50 + 200}
+              >
+                <div className={`w-12 h-12 rounded-full ${benefit.color} flex items-center justify-center mb-4`}>
+                  <benefit.icon className="text-xl" />
+                </div>
+                <h4 className="text-lg font-bold text-gray-900 mb-2">{benefit.title}</h4>
+                <p className="text-gray-600">{benefit.description}</p>
+              </div>
+            ))}
           </div>
+        </div>
+
+        {/* FAQ Section */}
+        <div data-aos="fade-up" data-aos-delay="200">
+          <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">Frequently Asked Questions</h3>
           
-          <div className="text-center p-6 bg-white rounded-xl shadow-md">
-            <FaBolt className="text-4xl text-amber-600 mx-auto mb-4" />
-            <h4 className="text-xl font-bold text-gray-900 mb-2">Early Access</h4>
-            <p className="text-gray-600">Be the first to read breaking news and exclusive stories.</p>
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            {[
+              {
+                question: 'How does the subscription work?',
+                answer: 'Our subscription provides access to premium content for the duration you select. Once subscribed, you can access all premium articles and features until your subscription expires.'
+              },
+              {
+                question: 'Can I cancel my subscription?',
+                answer: 'Yes, you can cancel your subscription at any time. However, we do not provide refunds for partial subscription periods.'
+              },
+              {
+                question: 'Will my subscription auto-renew?',
+                answer: 'No, our subscriptions do not auto-renew. You will need to manually renew your subscription when it expires.'
+              },
+              {
+                question: 'What payment methods do you accept?',
+                answer: 'We accept all major credit cards and PayPal. All payments are processed securely through Stripe.'
+              },
+              {
+                question: 'How can I contact support?',
+                answer: 'For any questions or issues, please email support@newsdaily.com or use the contact form on our website.'
+              }
+            ].map((faq, index) => (
+              <div 
+                key={index}
+                className="border-b border-gray-200 last:border-b-0"
+                data-aos="fade-up"
+                data-aos-delay={index * 50}
+              >
+                <details className="group">
+                  <summary className="flex items-center justify-between cursor-pointer p-6">
+                    <h5 className="text-lg font-medium text-gray-900">{faq.question}</h5>
+                    <span className="ml-6 flex-shrink-0 text-gray-500 group-open:rotate-180 transition-transform">
+                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </span>
+                  </summary>
+                  <div className="px-6 pb-6 pt-0">
+                    <p className="text-gray-600">{faq.answer}</p>
+                  </div>
+                </details>
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -4,6 +4,8 @@ import { FaEye, FaEdit, FaTrash, FaInfoCircle, FaNewspaper, FaCrown, FaCheckCirc
 import useAuth from '../../Hook/useAuth';
 import useAxios from '../../Hook/useAxios';
 import Swal from 'sweetalert2';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 const MyArticles = () => {
   const { user } = useAuth();
@@ -12,6 +14,15 @@ const MyArticles = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [declineReasonModal, setDeclineReasonModal] = useState({ isOpen: false, reason: '', articleTitle: '' });
+
+  // Initialize AOS
+  useEffect(() => {
+    AOS.init({
+      duration: 800,
+      once: true,
+      easing: 'ease-in-out',
+    });
+  }, []);
 
   // Fetch user's articles
   useEffect(() => {
@@ -171,7 +182,7 @@ const MyArticles = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8" data-aos="fade-down">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <FaNewspaper className="text-3xl text-blue-600 mr-4" />
@@ -189,7 +200,7 @@ const MyArticles = () => {
 
         {/* Articles Table */}
         {articles.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-white rounded-lg shadow-md p-12 text-center" data-aos="zoom-in">
             <FaNewspaper className="text-6xl text-gray-300 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">No Articles Yet</h2>
             <p className="text-gray-600 mb-6">You haven't submitted any articles yet. Start writing to see them here!</p>
@@ -201,7 +212,7 @@ const MyArticles = () => {
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="bg-white rounded-lg shadow-md overflow-hidden" data-aos="fade-up">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -228,7 +239,12 @@ const MyArticles = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {articles.map((article, index) => (
-                    <tr key={article._id} className="hover:bg-gray-50 transition-colors">
+                    <tr 
+                      key={article._id} 
+                      className="hover:bg-gray-50 transition-colors"
+                      data-aos="fade-right"
+                      data-aos-delay={index * 50}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {index + 1}
                       </td>
@@ -287,8 +303,14 @@ const MyArticles = () => {
 
         {/* Decline Reason Modal */}
         {declineReasonModal.isOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+
+
+            <div 
+              className="bg-white rounded-lg max-w-md w-full p-6"
+              data-aos="zoom-in"
+              data-aos-duration="300"
+            >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">Article Decline Reason</h3>
                 <button

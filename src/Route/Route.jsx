@@ -20,6 +20,8 @@ import MyArticles from "../Pages/MyArticles/MyArticles";
 import UpdateArticle from "../Pages/UpdateArticle/UpdateArticle";
 import AdminRoute from "./AdminRoute";
 import Forbidden from "../Pages/Forbidden/Forbidden";
+import Dashboard from "../Pages/Dashboard/Dashboard/Dashboard";
+import Profile from "../Pages/Profile/Profile";
 
 export const router = createBrowserRouter([
   {
@@ -99,6 +101,14 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: "/profile",
+        element: (
+          <PrivateRoute>
+            <Profile></Profile>
+          </PrivateRoute>
+        ),
+      },
+      {
         path: "/stripe-test",
         Component: StripeTest,
       },
@@ -108,15 +118,23 @@ export const router = createBrowserRouter([
     path: "/dashboard",
     element: (
       <PrivateRoute>
-        <AdminRoute>
+        {/* <AdminRoute> */}
           <DashboardLayout></DashboardLayout>
-        </AdminRoute>
+        {/* </AdminRoute> */}
       </PrivateRoute>
     ),
     children: [
       {
+        index: true,
+        Component: Dashboard,
+      },
+      {
         path: "all-users",
         Component: AllUsers,
+      },
+      {
+        path: "profile",
+        Component: Profile,
       },
       {
         path: "all-articles",

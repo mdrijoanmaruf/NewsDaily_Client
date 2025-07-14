@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import useAuth from '../../Hook/useAuth';
 import useUserRole from '../../Hook/useUserRole';
 import Swal from 'sweetalert2';
+import { FaCrown } from 'react-icons/fa';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -163,33 +164,62 @@ const Navbar = () => {
                 {/* User Profile Link */}
                 <Link to="/profile" className="flex items-center space-x-2 relative">
                   {userPhoto ? (
-                    <img 
-                      src={userPhoto} 
-                      alt="Profile" 
-                      className={`w-8 h-8 rounded-full border-2 ${
-                        hasSubscription 
-                          ? 'border-yellow-400 ring-2 ring-yellow-300' 
-                          : 'border-blue-600'
-                      }`}
-                    />
-                  ) : (
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                      hasSubscription 
-                        ? 'bg-gradient-to-r from-yellow-400 to-amber-500 border-yellow-400 ring-2 ring-yellow-300' 
-                        : 'bg-blue-600 border-blue-600'
-                    }`}>
-                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
-                      </svg>
+                    <div className="relative">
+                      <img 
+                        src={userPhoto} 
+                        alt="Profile" 
+                        className={`w-9 h-9 rounded-full border-2 ${
+                          hasSubscription 
+                            ? 'border-amber-600 ring-2 ring-amber-300' 
+                            : 'border-blue-600'
+                        }`}
+                      />
+                      {/* Premium Badge */}
+                      {hasSubscription && (
+                        <div className="absolute -top-2 -right-2 transform rotate-12 transition-transform hover:rotate-0">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full blur-sm animate-pulse"></div>
+                            <div className="relative bg-gradient-to-r from-amber-600 to-yellow-400 w-6 h-6 rounded-full flex items-center justify-center border border-amber-700 shadow-lg">
+                              <FaCrown className="text-xs text-white" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {/* Premium Badge */}
-                  {hasSubscription && (
-                    <div className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-black text-xs px-1.5 py-0.5 rounded-full flex items-center font-bold">
-                      👑
+                  ) : (
+                    <div className="relative">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 ${
+                        hasSubscription 
+                          ? 'bg-gradient-to-r from-amber-600 to-amber-500 border-amber-600 ring-2 ring-amber-300' 
+                          : 'bg-blue-600 border-blue-600'
+                      }`}>
+                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
+                        </svg>
+                      </div>
+                      {/* Premium Badge */}
+                      {hasSubscription && (
+                        <div className="absolute -top-2 -right-2 transform rotate-12 transition-transform hover:rotate-0">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full blur-sm animate-pulse"></div>
+                            <div className="relative bg-gradient-to-r from-amber-600 to-yellow-400 w-6 h-6 rounded-full flex items-center justify-center border border-amber-700 shadow-lg">
+                              <FaCrown className="text-xs text-white" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </Link>
+                
+                {/* Premium Status Text */}
+                {hasSubscription && (
+                  <div className="hidden lg:flex items-center">
+                    <span className="bg-gradient-to-r from-amber-600 to-yellow-500 bg-clip-text text-transparent text-xs font-bold px-2 py-1 rounded-md border border-amber-200">
+                      PREMIUM
+                    </span>
+                  </div>
+                )}
                 
                 {/* Logout Button */}
                 <button 
@@ -249,7 +279,7 @@ const Navbar = () => {
                 </Link>
               ))}
               
-              {/* Admin Links for Mobile */}
+              {/* Admin Links (Mobile) */}
               {adminItems.map((item) => 
                 item.condition && (
                   <Link 
@@ -259,11 +289,16 @@ const Navbar = () => {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {item.label}
+                    {item.badge && (
+                      <span className="ml-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
                   </Link>
                 )
               )}
               
-              {/* Conditional Links for Mobile */}
+              {/* Conditional Links (Mobile) */}
               {conditionalItems.map((item) => 
                 item.condition && (
                   <Link 
@@ -272,80 +307,130 @@ const Navbar = () => {
                     className={getLinkClasses(item.to, true)}
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    {item.label} {item.badge && '⭐'}
+                    {item.label}
+                    {item.badge && (
+                      <span className="ml-2 bg-yellow-400 text-black text-xs px-1.5 py-0.5 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
                   </Link>
                 )
               )}
-              
-              {/* Mobile User Section */}
-              <div className="border-t border-gray-200 pt-3 mt-3">
-                {isLoggedIn ? (
-                  <div className="space-y-2">
-                    <Link 
-                      to="/profile" 
-                      className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium relative"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {userPhoto ? (
+            </div>
+            
+            {/* Mobile User Section */}
+            <div className="pt-4 pb-3 border-t border-gray-200">
+              {isLoggedIn ? (
+                <div className="px-4">
+                  <div className="flex items-center mb-3">
+                    {userPhoto ? (
+                      <div className="relative">
                         <img 
                           src={userPhoto} 
                           alt="Profile" 
-                          className={`w-6 h-6 rounded-full border ${
+                          className={`w-10 h-10 rounded-full border-2 ${
                             hasSubscription 
-                              ? 'border-yellow-400 ring-1 ring-yellow-300' 
+                              ? 'border-amber-600 ring-2 ring-amber-300' 
                               : 'border-blue-600'
                           }`}
                         />
-                      ) : (
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center border ${
+                        {/* Premium Badge (Mobile) */}
+                        {hasSubscription && (
+                          <div className="absolute -top-2 -right-2 transform rotate-12">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full blur-sm animate-pulse"></div>
+                              <div className="relative bg-gradient-to-r from-amber-600 to-yellow-400 w-6 h-6 rounded-full flex items-center justify-center border border-amber-700 shadow-lg">
+                                <FaCrown className="text-xs text-white" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
                           hasSubscription 
-                            ? 'bg-gradient-to-r from-yellow-400 to-amber-500 border-yellow-400 ring-1 ring-yellow-300' 
+                            ? 'bg-gradient-to-r from-amber-600 to-amber-500 border-amber-600 ring-2 ring-amber-300' 
                             : 'bg-blue-600 border-blue-600'
                         }`}>
-                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
                           </svg>
                         </div>
+                        {/* Premium Badge (Mobile) */}
+                        {hasSubscription && (
+                          <div className="absolute -top-2 -right-2 transform rotate-12">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full blur-sm animate-pulse"></div>
+                              <div className="relative bg-gradient-to-r from-amber-600 to-yellow-400 w-6 h-6 rounded-full flex items-center justify-center border border-amber-700 shadow-lg">
+                                <FaCrown className="text-xs text-white" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="ml-3">
+                      <div className="text-base font-medium text-gray-800">{userName}</div>
+                      {user?.email && (
+                        <div className="text-sm font-medium text-gray-500 truncate max-w-[200px]">
+                          {user.email}
+                        </div>
                       )}
-                      <span className={hasSubscription ? 'text-amber-700 font-semibold' : ''}>{userName}</span>
-                      {/* Premium Badge for Mobile */}
+                      {/* Premium Status Text (Mobile) */}
                       {hasSubscription && (
-                        <span className="text-yellow-500 text-sm">👑</span>
+                        <div className="mt-1">
+                          <span className="bg-gradient-to-r from-amber-600 to-yellow-500 bg-clip-text text-transparent text-xs font-bold">
+                            PREMIUM MEMBER
+                          </span>
+                        </div>
                       )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 space-y-1">
+                    <Link
+                      to="/profile"
+                      className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Your Profile
                     </Link>
-                    
-                    <button 
-                      onClick={handleLogout}
-                      className="w-full text-left text-red-600 hover:text-red-800 px-3 py-2 rounded-md text-base font-medium"
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full text-left block px-4 py-2 text-base font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md"
                     >
                       Logout
                     </button>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Link 
-                      to="/login" 
-                      className="block text-center text-blue-600 hover:text-blue-800 px-3 py-2 rounded-md text-base font-medium border border-blue-600 hover:bg-blue-50"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Login
-                    </Link>
-                    <Link 
-                      to="/register" 
-                      className="block text-center bg-blue-600 text-white px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Register
-                    </Link>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="px-4 flex flex-col space-y-2">
+                  <Link
+                    to="/login"
+                    className="block text-center px-4 py-2 text-base font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-600 rounded-md"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="block text-center px-4 py-2 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
     </nav>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;
