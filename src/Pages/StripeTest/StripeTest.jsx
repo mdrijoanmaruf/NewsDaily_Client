@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaCreditCard, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import useAxios from '../../Hook/useAxios';
+import Swal from 'sweetalert2';
 
 const StripeTest = () => {
   const axiosInstance = useAxios();
@@ -21,13 +22,25 @@ const StripeTest = () => {
       console.log('Backend Response:', data);
 
       if (data.success) {
-        alert('✅ Stripe integration is working correctly!');
+        Swal.fire({
+          icon: 'success',
+          title: 'Stripe integration is working correctly!',
+          text: 'Your backend and Stripe setup are correct.',
+        });
       } else {
-        alert('❌ Stripe integration test failed: ' + data.message);
+        Swal.fire({
+          icon: 'error',
+          title: 'Stripe integration test failed',
+          text: data.message || 'Unknown error',
+        });
       }
     } catch (error) {
       console.error('Test failed:', error);
-      alert('❌ Connection test failed: ' + (error.response?.data?.message || error.message));
+      Swal.fire({
+        icon: 'error',
+        title: 'Connection test failed',
+        text: error.response?.data?.message || error.message,
+      });
     }
   };
 

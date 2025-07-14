@@ -1,8 +1,4 @@
-
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from "react-router";
+import { createBrowserRouter, RouterProvider } from "react-router";
 import Root from "../Layout/Root";
 import Home from "../Pages/Home/Home";
 import Register from "../Pages/Register/Register";
@@ -22,98 +18,122 @@ import Payment from "../Pages/Payment/Payment";
 import StripeTest from "../Pages/StripeTest/StripeTest";
 import MyArticles from "../Pages/MyArticles/MyArticles";
 import UpdateArticle from "../Pages/UpdateArticle/UpdateArticle";
+import AdminRoute from "./AdminRoute";
+import Forbidden from "../Pages/Forbidden/Forbidden";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: Root,
-    children : [
-        {
-            index : true,
-            Component : Home
-        },
-        {
-            path: '/register',
-            Component : Register
-        },
-        {
-            path: '/login',
-            Component : Login
-        },
-        {
-            path: '/add-articles',
-            element: <PrivateRoute>
-                <AddArticle></AddArticle>
-            </PrivateRoute>
-        },
-        {
-          path: '/all-articles',
-          element: <PrivateRoute>
+    children: [
+      {
+        index: true,
+        Component: Home,
+      },
+      {
+        path: "/register",
+        Component: Register,
+      },
+      {
+        path: "/forbidden",
+        Component: Forbidden,
+      },
+      {
+        path: "/login",
+        Component: Login,
+      },
+      {
+        path: "/add-articles",
+        element: (
+          <PrivateRoute>
+            <AddArticle></AddArticle>
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "/all-articles",
+        element: (
+          <PrivateRoute>
             <AllArticlePage></AllArticlePage>
           </PrivateRoute>
-        },
-        {
-          path: '/subscription',
-          element: <PrivateRoute>
+        ),
+      },
+      {
+        path: "/subscription",
+        element: (
+          <PrivateRoute>
             <Subscription></Subscription>
           </PrivateRoute>
-        },
-        {
-          path: '/payment',
-          element: <PrivateRoute>
+        ),
+      },
+      {
+        path: "/payment",
+        element: (
+          <PrivateRoute>
             <Payment></Payment>
           </PrivateRoute>
-        },
-        {
-          path: '/article/:id',
-          element: <PrivateRoute>
+        ),
+      },
+      {
+        path: "/article/:id",
+        element: (
+          <PrivateRoute>
             <ArticleDetails></ArticleDetails>
           </PrivateRoute>
-        },
-        {
-          path: '/my-articles',
-          element: <PrivateRoute>
+        ),
+      },
+      {
+        path: "/my-articles",
+        element: (
+          <PrivateRoute>
             <MyArticles></MyArticles>
           </PrivateRoute>
-        },
-        {
-          path: '/update-article/:id',
-          element: <PrivateRoute>
+        ),
+      },
+      {
+        path: "/update-article/:id",
+        element: (
+          <PrivateRoute>
             <UpdateArticle></UpdateArticle>
           </PrivateRoute>
-        },
-        {
-          path: '/stripe-test',
-          Component: StripeTest
-        }
-    ]
+        ),
+      },
+      {
+        path: "/stripe-test",
+        Component: StripeTest,
+      },
+    ],
   },
   {
-    path: '/dashboard',
-    element : <PrivateRoute>
-        <DashboardLayout></DashboardLayout>
-    </PrivateRoute>,
-    children : [
-        {
-            path: 'all-users',
-            Component: AllUsers
-        },
-        {
-            path: 'all-articles',
-            Component: AllArticles
-        },
-        {
-          path: 'add-publisher',
-          Component: AddPublisher
-        },
-        {
-            path: "*",
-            Component: Dashboard404
-        }
-    ]
+    path: "/dashboard",
+    element: (
+      <PrivateRoute>
+        <AdminRoute>
+          <DashboardLayout></DashboardLayout>
+        </AdminRoute>
+      </PrivateRoute>
+    ),
+    children: [
+      {
+        path: "all-users",
+        Component: AllUsers,
+      },
+      {
+        path: "all-articles",
+        Component: AllArticles,
+      },
+      {
+        path: "add-publisher",
+        Component: AddPublisher,
+      },
+      {
+        path: "*",
+        Component: Dashboard404,
+      },
+    ],
   },
   {
     path: "*",
-    Component: NotFound
-  }
+    Component: NotFound,
+  },
 ]);
