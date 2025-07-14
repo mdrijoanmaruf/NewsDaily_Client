@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaSearch, FaNewspaper, FaCrown, FaUsers, FaChartLine, FaArrowRight, FaPlay } from 'react-icons/fa';
+import { FaSearch, FaNewspaper, FaCrown, FaUsers, FaChartLine, FaArrowRight, FaPlay, FaSpinner } from 'react-icons/fa';
 import useAuth from '../../Hook/useAuth';
 import useAxios from '../../Hook/useAxios';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 const Hero = () => {
-  const { user, isPremium } = useAuth();
+  const { user, isPremium, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const axiosSecure = useAxios();
   const [stats, setStats] = useState({
@@ -13,6 +15,18 @@ const Hero = () => {
     totalUsers: 0,
     totalViews: 0
   });
+  const [premiumLoading, setPremiumLoading] = useState(true);
+
+  // Initialize AOS
+  useEffect(() => {
+    AOS.init({
+      duration: 1000,
+      once: false,
+      mirror: true,
+      offset: 50,
+      easing: 'ease-in-out',
+    });
+  }, []);
 
   // Fetch website statistics
   useEffect(() => {
@@ -48,6 +62,18 @@ const Hero = () => {
     fetchStats();
   }, [axiosSecure]);
 
+  // Set premium loading state based on auth loading
+  useEffect(() => {
+    if (!authLoading) {
+      // Add a slight delay to ensure premium status is fully loaded
+      const timer = setTimeout(() => {
+        setPremiumLoading(false);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [authLoading]);
+
   // Format numbers for display
   const formatNumber = (num) => {
     if (num >= 1000000) {
@@ -75,17 +101,17 @@ const Hero = () => {
       </div>
 
       {/* Floating Elements */}
-      <div className="absolute top-20 left-10 animate-float">
+      <div className="absolute top-20 left-10 animate-float" data-aos="fade-right" data-aos-delay="300">
         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center shadow-lg">
           <FaNewspaper className="text-2xl text-blue-600" />
         </div>
       </div>
-      <div className="absolute top-40 right-20 animate-float" style={{ animationDelay: '1s' }}>
+      <div className="absolute top-40 right-20 animate-float" style={{ animationDelay: '1s' }} data-aos="fade-left" data-aos-delay="500">
         <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center shadow-lg">
           <FaChartLine className="text-xl text-indigo-600" />
         </div>
       </div>
-      <div className="absolute bottom-32 left-20 animate-float" style={{ animationDelay: '2s' }}>
+      <div className="absolute bottom-32 left-20 animate-float" style={{ animationDelay: '2s' }} data-aos="fade-up" data-aos-delay="700">
         <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center shadow-lg">
           <FaUsers className="text-xl text-purple-600" />
         </div>
@@ -96,13 +122,21 @@ const Hero = () => {
           {/* Left Content */}
           <div className="text-center lg:text-left">
             {/* Welcome Badge */}
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-6 animate-fade-in">
+            <div 
+              className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-6"
+              data-aos="fade-down"
+              data-aos-delay="100"
+            >
               <FaNewspaper className="mr-2" />
               Welcome to NewsDaily
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight animate-slide-in-left">
+            <h1 
+              className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight"
+              data-aos="fade-right"
+              data-aos-delay="200"
+            >
               Stay Informed with
               <span className="block bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 Latest News
@@ -111,13 +145,21 @@ const Hero = () => {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl animate-slide-in-left" style={{ animationDelay: '0.2s' }}>
+            <p 
+              className="text-xl text-gray-600 mb-8 max-w-2xl"
+              data-aos="fade-right" 
+              data-aos-delay="300"
+            >
               Discover breaking news, trending articles, and exclusive content from trusted sources worldwide. 
               Join millions of readers who trust NewsDaily for their daily information needs.
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-12 animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
+            <div 
+              className="flex flex-col sm:flex-row gap-4 mb-12"
+              data-aos="fade-up"
+              data-aos-delay="400"
+            >
               {!user ? (
                 <>
                   <Link 
@@ -137,7 +179,15 @@ const Hero = () => {
                 </>
               ) : (
                 <>
-                  {!isPremium ? (
+                  {premiumLoading ? (
+                    <button 
+                      disabled
+                      className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg"
+                    >
+                      <FaSpinner className="mr-2 animate-spin" />
+                      Checking Premium Status...
+                    </button>
+                  ) : !isPremium ? (
                     <Link 
                       to="/subscription"
                       className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
@@ -166,20 +216,24 @@ const Hero = () => {
             </div>
 
             {/* Stats Section */}
-            <div className="grid grid-cols-3 gap-6 animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
-              <div className="text-center">
+            <div 
+              className="grid grid-cols-3 gap-6"
+              data-aos="fade-up"
+              data-aos-delay="500"
+            >
+              <div className="text-center" data-aos="zoom-in" data-aos-delay="600">
                 <div className="text-2xl md:text-3xl font-bold text-blue-600 mb-1">
                   {formatNumber(stats.totalArticles)}+
                 </div>
                 <div className="text-sm text-gray-600">Articles Published</div>
               </div>
-              <div className="text-center">
+              <div className="text-center" data-aos="zoom-in" data-aos-delay="700">
                 <div className="text-2xl md:text-3xl font-bold text-indigo-600 mb-1">
                   {formatNumber(stats.totalUsers)}+
                 </div>
                 <div className="text-sm text-gray-600">Active Readers</div>
               </div>
-              <div className="text-center">
+              <div className="text-center" data-aos="zoom-in" data-aos-delay="800">
                 <div className="text-2xl md:text-3xl font-bold text-purple-600 mb-1">
                   {formatNumber(stats.totalViews)}+
                 </div>
@@ -189,10 +243,14 @@ const Hero = () => {
           </div>
 
           {/* Right Content - Hero Image/Illustration */}
-          <div className="relative animate-slide-in-right">
+          <div className="relative" data-aos="fade-left" data-aos-delay="300">
             <div className="relative">
               {/* Main Hero Image */}
-              <div className="relative w-full h-96 lg:h-[500px] rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-100 to-indigo-200">
+              <div 
+                className="relative w-full h-96 lg:h-[500px] rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-100 to-indigo-200"
+                data-aos="zoom-in"
+                data-aos-delay="400"
+              >
                 <img 
                   src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
                   alt="NewsDaily - Stay Informed" 
@@ -202,21 +260,34 @@ const Hero = () => {
               </div>
 
               {/* Floating Cards */}
-              <div className="absolute -top-4 -left-4 w-24 h-24 bg-white rounded-xl shadow-xl flex items-center justify-center animate-pulse">
+              <div 
+                className="absolute -top-4 -left-4 w-24 h-24 bg-white rounded-xl shadow-xl flex items-center justify-center animate-pulse"
+                data-aos="fade-right"
+                data-aos-delay="600"
+              >
                 <div className="text-center">
                   <FaNewspaper className="text-2xl text-blue-600 mb-1" />
                   <div className="text-xs font-semibold text-gray-700">Breaking News</div>
                 </div>
               </div>
 
-              <div className="absolute -bottom-4 -right-4 w-32 h-20 bg-white rounded-xl shadow-xl flex items-center justify-center animate-pulse" style={{ animationDelay: '1s' }}>
+              <div 
+                className="absolute -bottom-4 -right-4 w-32 h-20 bg-white rounded-xl shadow-xl flex items-center justify-center animate-pulse" 
+                style={{ animationDelay: '1s' }}
+                data-aos="fade-left"
+                data-aos-delay="700"
+              >
                 <div className="text-center">
                   <div className="text-xl font-bold text-green-600">Live</div>
                   <div className="text-xs text-gray-600">Updates</div>
                 </div>
               </div>
 
-              <div className="absolute top-1/2 -right-6 w-20 h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-xl animate-bounce">
+              <div 
+                className="absolute top-1/2 -right-6 w-20 h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-xl animate-bounce"
+                data-aos="zoom-in"
+                data-aos-delay="800"
+              >
                 <FaCrown className="text-xl text-white" />
               </div>
             </div>

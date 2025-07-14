@@ -1,11 +1,46 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { FaNewspaper, FaSpinner } from 'react-icons/fa'
 import { HiOutlineSparkles } from 'react-icons/hi'
 
 const WebsiteLoading = () => {
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState('Initializing...');
+  
+  const loadingMessages = [
+    '🚀 Getting latest news ready for you',
+    '📰 Loading trending articles',
+    '✨ Preparing your personalized experience',
+    '🔍 Fetching publishers',
+    '📊 Loading statistics',
+    '🌟 Almost there!'
+  ];
+
+  useEffect(() => {
+    // Simulate loading progress
+    const interval = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + 5;
+      });
+    }, 150);
+
+    // Cycle through loading messages
+    const messageInterval = setInterval(() => {
+      setLoadingMessage(loadingMessages[Math.floor(Math.random() * loadingMessages.length)]);
+    }, 2000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(messageInterval);
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
-      <div className="text-center">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center z-50">
+      <div className="text-center max-w-md px-4">
         {/* Logo Section */}
         <div className="mb-8">
           <div className="relative inline-flex items-center justify-center">
@@ -36,7 +71,10 @@ const WebsiteLoading = () => {
           <div className="relative w-20 h-20 mx-auto">
             <div className="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-transparent border-t-blue-600 border-r-purple-600 rounded-full animate-spin"></div>
-            <div className="absolute inset-2 border-2 border-transparent border-b-blue-400 border-l-purple-400 rounded-full animate-spin" style={{ animationDirection: 'reverse' }}></div>
+            <div className="absolute inset-2 border-2 border-transparent border-b-blue-400 border-l-purple-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+            <div className="absolute inset-4 flex items-center justify-center">
+              <span className="text-sm font-semibold text-gray-700">{loadingProgress}%</span>
+            </div>
           </div>
 
           {/* Loading Text with Dots */}
@@ -56,16 +94,26 @@ const WebsiteLoading = () => {
         {/* Progress Bar */}
         <div className="mt-8 w-64 mx-auto">
           <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-600 to-purple-600 rounded-full animate-pulse"></div>
+            <div 
+              className="h-full bg-gradient-to-r from-blue-600 to-purple-600 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${loadingProgress}%` }}
+            ></div>
           </div>
           <p className="text-xs text-gray-500 mt-2">Preparing your dashboard...</p>
         </div>
 
         {/* Fun Loading Messages */}
         <div className="mt-8">
-          <div className="text-sm text-gray-500 animate-pulse">
-            <p>🚀 Getting latest news ready for you</p>
+          <div className="text-sm text-gray-500 min-h-[20px] transition-all duration-300">
+            <p className="animate-pulse">{loadingMessage}</p>
           </div>
+        </div>
+
+        {/* Loading Tips */}
+        <div className="mt-6 bg-white/50 p-3 rounded-lg border border-gray-100 shadow-sm">
+          <p className="text-xs text-gray-500 italic">
+            "Stay informed with NewsDaily's premium content and exclusive features."
+          </p>
         </div>
       </div>
     </div>
