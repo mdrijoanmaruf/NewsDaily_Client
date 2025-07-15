@@ -1,5 +1,33 @@
 import React, { useState, useEffect } from 'react'
-import { FaUsers, FaNewspaper, FaBuilding, FaChartLine } from 'react-icons/fa'
+import { 
+  FaUsers, 
+  FaNewspaper, 
+  FaBuilding, 
+  FaChartLine, 
+  FaRegClock, 
+  FaRegCalendarAlt, 
+  FaRegBell, 
+  FaExclamationTriangle,
+  FaSearch,
+  FaFilter,
+  FaRegThumbsUp,
+  FaRegEye,
+  FaRegCommentDots,
+  FaChartBar,
+  FaChartPie,
+  FaChartArea,
+  FaUserCheck,
+  FaUserPlus
+} from 'react-icons/fa'
+import { 
+  MdTrendingUp, 
+  MdNotificationsActive, 
+  MdOutlineArticle 
+} from 'react-icons/md'
+import { 
+  BiLineChart, 
+  BiDotsVerticalRounded 
+} from 'react-icons/bi'
 import useAuth from '../../../Hook/useAuth'
 import useAxiosSecure from '../../../Hook/useAxiosSecure'
 import AOS from 'aos'
@@ -231,32 +259,40 @@ const Dashboard = () => {
       value: stats.users,
       icon: FaUsers,
       color: 'bg-blue-500',
+      textColor: 'text-blue-500',
       change: '+12%',
-      changeType: 'increase'
+      changeType: 'increase',
+      trendIcon: MdTrendingUp
     },
     {
       title: 'Total Articles',
       value: stats.articles,
-      icon: FaNewspaper,
+      icon: MdOutlineArticle,
       color: 'bg-green-500',
+      textColor: 'text-green-500',
       change: '+5%',
-      changeType: 'increase'
+      changeType: 'increase',
+      trendIcon: BiLineChart
     },
     {
       title: 'Publishers',
       value: stats.publishers,
       icon: FaBuilding,
       color: 'bg-purple-500',
+      textColor: 'text-purple-500',
       change: '+3%',
-      changeType: 'increase'
+      changeType: 'increase',
+      trendIcon: MdTrendingUp
     },
     {
       title: 'Premium Users',
       value: stats.premiumUsers,
-      icon: FaChartLine,
+      icon: FaUserCheck,
       color: 'bg-amber-500',
+      textColor: 'text-amber-500',
       change: '+15%',
-      changeType: 'increase'
+      changeType: 'increase',
+      trendIcon: BiLineChart
     }
   ]
 
@@ -342,9 +378,7 @@ const Dashboard = () => {
   const FallbackChart = ({ title, type }) => (
     <div className="flex flex-col items-center justify-center h-full p-4">
       <div className="text-red-500 mb-2">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
+        <FaExclamationTriangle className="h-10 w-10" />
       </div>
       <h3 className="text-lg font-medium text-gray-900 mb-1">Unable to load {type} chart</h3>
       <p className="text-sm text-gray-500 text-center">
@@ -358,7 +392,8 @@ const Dashboard = () => {
       {/* Dashboard Header */}
       <div className="mb-8" data-aos="fade-down">
         <h1 className="text-3xl font-bold text-gray-900">Welcome to NewsDaily Dashboard</h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-gray-600 flex items-center">
+          <FaRegCalendarAlt className="mr-2 text-blue-500" />
           Hello, {user?.displayName || 'Admin'}! Here's what's happening with your platform today.
         </p>
       </div>
@@ -367,6 +402,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {statCards.map((stat, index) => {
           const Icon = stat.icon
+          const TrendIcon = stat.trendIcon
           return (
             <div 
               key={stat.title}
@@ -376,11 +412,12 @@ const Dashboard = () => {
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`p-3 rounded-lg ${stat.color} bg-opacity-10`}>
-                    <Icon className={`h-6 w-6 ${stat.color.replace('bg-', 'text-')}`} />
+                  <div className={`p-3 rounded-lg ${stat.color} bg-opacity-10 flex items-center justify-center`}>
+                    <Icon className={`h-6 w-6 ${stat.textColor}`} />
                   </div>
-                  <span className={`text-sm font-medium ${stat.changeType === 'increase' ? 'text-green-500' : 'text-red-500'}`}>
+                  <span className={`text-sm font-medium flex items-center ${stat.changeType === 'increase' ? 'text-green-500' : 'text-red-500'}`}>
                     {stat.change}
+                    <TrendIcon className="ml-1 h-4 w-4" />
                   </span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-1">
@@ -401,8 +438,18 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Publisher Distribution Pie Chart */}
         <div className="bg-white rounded-xl shadow-md overflow-hidden" data-aos="fade-right">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Publisher Distribution</h3>
+          <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <FaChartPie className="mr-2 text-purple-500" /> Publisher Distribution
+            </h3>
+            <div className="flex space-x-2">
+              <button className="p-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <FaFilter className="h-4 w-4" />
+              </button>
+              <button className="p-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <BiDotsVerticalRounded className="h-5 w-5" />
+              </button>
+            </div>
           </div>
           <div className="p-4 h-80">
             {chartLoading ? (
@@ -430,8 +477,18 @@ const Dashboard = () => {
 
         {/* User Growth Line Chart */}
         <div className="bg-white rounded-xl shadow-md overflow-hidden" data-aos="fade-left">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">User Growth Trend</h3>
+          <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <FaChartArea className="mr-2 text-blue-500" /> User Growth Trend
+            </h3>
+            <div className="flex space-x-2">
+              <button className="p-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <FaFilter className="h-4 w-4" />
+              </button>
+              <button className="p-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <BiDotsVerticalRounded className="h-5 w-5" />
+              </button>
+            </div>
           </div>
           <div className="p-4 h-80">
             {chartLoading ? (
@@ -462,8 +519,18 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Top Articles Bar Chart */}
         <div className="bg-white rounded-xl shadow-md overflow-hidden" data-aos="fade-right" data-aos-delay="100">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Top Articles</h3>
+          <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <FaChartBar className="mr-2 text-green-500" /> Top Articles
+            </h3>
+            <div className="flex space-x-2">
+              <button className="p-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <FaFilter className="h-4 w-4" />
+              </button>
+              <button className="p-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <BiDotsVerticalRounded className="h-5 w-5" />
+              </button>
+            </div>
           </div>
           <div className="p-4 h-96">
             {chartLoading ? (
@@ -491,8 +558,18 @@ const Dashboard = () => {
 
         {/* Recent Activity Section */}
         <div className="bg-white rounded-xl shadow-md overflow-hidden" data-aos="fade-left" data-aos-delay="100">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+          <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <MdNotificationsActive className="mr-2 text-amber-500" /> Recent Activity
+            </h3>
+            <div className="flex space-x-2">
+              <button className="p-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <FaRegBell className="h-4 w-4" />
+              </button>
+              <button className="p-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <BiDotsVerticalRounded className="h-5 w-5" />
+              </button>
+            </div>
           </div>
           <div className="p-6">
             <div className="space-y-4">
@@ -512,12 +589,14 @@ const Dashboard = () => {
                 <>
                   <div className="flex items-start space-x-4">
                     <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      <FaUsers className="text-blue-600" />
+                      <FaUserPlus className="text-blue-600" />
                     </div>
                     <div>
                       <p className="text-gray-800 font-medium">New user registration</p>
                       <p className="text-sm text-gray-500">Jane Smith joined the platform</p>
-                      <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                      <p className="text-xs text-gray-400 mt-1 flex items-center">
+                        <FaRegClock className="mr-1" /> 2 hours ago
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-4">
@@ -527,7 +606,9 @@ const Dashboard = () => {
                     <div>
                       <p className="text-gray-800 font-medium">New article published</p>
                       <p className="text-sm text-gray-500">Tech Trends 2023: AI Revolution</p>
-                      <p className="text-xs text-gray-400 mt-1">5 hours ago</p>
+                      <p className="text-xs text-gray-400 mt-1 flex items-center">
+                        <FaRegClock className="mr-1" /> 5 hours ago
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-4">
@@ -537,7 +618,9 @@ const Dashboard = () => {
                     <div>
                       <p className="text-gray-800 font-medium">New premium subscription</p>
                       <p className="text-sm text-gray-500">Michael Johnson upgraded to premium</p>
-                      <p className="text-xs text-gray-400 mt-1">1 day ago</p>
+                      <p className="text-xs text-gray-400 mt-1 flex items-center">
+                        <FaRegClock className="mr-1" /> 1 day ago
+                      </p>
                     </div>
                   </div>
                 </>

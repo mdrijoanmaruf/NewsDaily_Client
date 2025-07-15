@@ -4,6 +4,7 @@ import { FaGoogle, FaEye, FaEyeSlash, FaCamera, FaUser, FaEnvelope, FaLock } fro
 import useAuth from '../../Hook/useAuth'
 import useAxios from '../../Hook/useAxios'
 import Swal from 'sweetalert2'
+import { updateProfile } from 'firebase/auth'
 
 const Register = () => {
   const { createUser, signInWithGoogle } = useAuth()
@@ -166,6 +167,12 @@ const Register = () => {
     try {
       // Create user with email and password
       const userCredential = await createUser(formData.email, formData.password)
+      
+      // Update user profile with name and photo
+      await updateProfile(userCredential.user, {
+        displayName: formData.name,
+        photoURL: imagePreview || null
+      })
       
       // Prepare user data for database (without password)
       const userData = {

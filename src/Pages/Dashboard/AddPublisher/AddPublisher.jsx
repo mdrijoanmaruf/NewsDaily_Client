@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { FaNewspaper, FaImage, FaUpload, FaSpinner, FaCheckCircle, FaTrash, FaEdit } from 'react-icons/fa';
+import { FaNewspaper, FaImage, FaUpload, FaSpinner, FaCheckCircle, FaTrash, FaEdit, FaSearch } from 'react-icons/fa';
 import useAxiosSecure from '../../../Hook/useAxiosSecure';
 import Swal from 'sweetalert2';
 import AOS from 'aos';
@@ -28,6 +28,7 @@ const AddPublisher = () => {
   // UI state
   const [logoPreview, setLogoPreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch all publishers using TanStack Query
   const { data: publishers = [], isLoading: isLoadingPublishers, refetch } = useQuery({
@@ -239,6 +240,11 @@ const AddPublisher = () => {
     });
   };
 
+  // Filter publishers by search term
+  const filteredPublishers = publishers.filter(publisher => 
+    publisher.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6">
       <div className="">
@@ -413,6 +419,20 @@ const AddPublisher = () => {
             </div>
           </div>
 
+          {/* Search Box */}
+          <div className="mb-6">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search publishers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            </div>
+          </div>
+
           {isLoadingPublishers ? (
             <div className="flex items-center justify-center py-12" data-aos="fade">
               <div className="flex items-center space-x-3 text-gray-600">
@@ -426,51 +446,55 @@ const AddPublisher = () => {
               <h3 className="text-lg font-semibold text-gray-800 mb-2">No Publishers Found</h3>
               <p className="text-gray-600">Add your first publisher using the form above.</p>
             </div>
+          ) : filteredPublishers.length === 0 ? (
+            <div className="text-center py-12" data-aos="zoom-in">
+              <div className="text-4xl mb-4">🔍</div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">No Matching Publishers</h3>
+              <p className="text-gray-600">No publishers match your search criteria.</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {publishers.map((publisher, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPublishers.map((publisher, index) => (
                 <div 
                   key={publisher._id} 
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-gray-50"
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
                   data-aos="fade-up"
                   data-aos-delay={100 + (index * 50)}
                   data-aos-offset="10"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center space-x-3 flex-1">
+                  <div className="flex items-center space-x-4 mb-3">
+                    <div className="w-16 h-16 flex-shrink-0 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden">
                       <img
                         src={publisher.logo}
                         alt={publisher.name}
-                        className="w-12 h-12 object-contain rounded-lg border border-gray-200 bg-white"
+                        className="max-w-full max-h-full object-contain p-1"
                         onError={(e) => {
                           e.target.src = '/placeholder-logo.png';
                         }}
                       />
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 text-sm line-clamp-1">
-                          {publisher.name}
-                        </h4>
-                        <p className="text-xs text-gray-500">
-                          Added: {new Date(publisher.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleDeletePublisher(publisher)}
-                        disabled={deletePublisherMutation.isPending}
-                        className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors group"
-                        title="Delete Publisher"
-                      >
-                        <FaTrash className={`text-sm group-hover:scale-110 transition-transform ${
-                          deletePublisherMutation.isPending ? 'animate-spin' : ''
-                        }`} />
-                      </button>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-gray-900 text-base truncate">
+                        {publisher.name}
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Added: {new Date(publisher.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
+                    <button
+                      onClick={() => handleDeletePublisher(publisher)}
+                      disabled={deletePublisherMutation.isPending}
+                      className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors group"
+                      title="Delete Publisher"
+                    >
+                      <FaTrash className={`text-sm group-hover:scale-110 transition-transform ${
+                        deletePublisherMutation.isPending ? 'animate-spin' : ''
+                      }`} />
+                    </button>
                   </div>
                   
                   {/* Publisher Stats */}
-                  <div className="border-t border-gray-200 pt-3">
+                  <div className="border-t border-gray-200 pt-2 mt-2">
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>Created: {new Date(publisher.createdAt).toLocaleDateString()}</span>
                       {publisher.updatedAt !== publisher.createdAt && (

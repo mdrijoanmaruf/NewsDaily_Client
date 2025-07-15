@@ -62,7 +62,7 @@ const DashboardLayout = () => {
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+      } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:fixed lg:h-screen lg:flex lg:flex-col`}>
         
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-6 bg-gradient-to-r from-blue-600 to-blue-700">
@@ -98,7 +98,7 @@ const DashboardLayout = () => {
         </div>
 
         {/* Navigation Menu */}
-        <nav className="mt-6 px-3">
+        <nav className="mt-6 px-3 flex-grow overflow-y-auto">
           <div className="space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon
@@ -129,7 +129,7 @@ const DashboardLayout = () => {
         </nav>
 
         {/* Bottom Actions */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200">
           <div className="space-y-2">
             <Link
               to="/"
@@ -158,7 +158,7 @@ const DashboardLayout = () => {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex-1 flex flex-col lg:ml-64">
         {/* Top Header */}
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="flex items-center justify-between h-16 px-6">

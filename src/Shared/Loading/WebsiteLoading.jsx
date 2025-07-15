@@ -25,12 +25,12 @@ const WebsiteLoading = () => {
         }
         return prev + 5;
       });
-    }, 150);
+    }, 50);
 
     // Cycle through loading messages
     const messageInterval = setInterval(() => {
       setLoadingMessage(loadingMessages[Math.floor(Math.random() * loadingMessages.length)]);
-    }, 2000);
+    }, 1000);
 
     return () => {
       clearInterval(interval);

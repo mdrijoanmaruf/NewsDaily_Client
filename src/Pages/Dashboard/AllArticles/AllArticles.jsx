@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FaEye, FaCheck, FaTimes, FaTrash, FaCrown, FaUser, FaEnvelope, FaCalendar, FaTag, FaNewspaper } from 'react-icons/fa';
+import { FaEye, FaCheck, FaTimes, FaTrash, FaCrown, FaUser, FaEnvelope, FaCalendar, FaTag, FaNewspaper, FaChevronLeft, FaChevronRight, FaFilter } from 'react-icons/fa';
 import useAxiosSecure from '../../../Hook/useAxiosSecure';
 import useAuth from '../../../Hook/useAuth';
 import ComponentLoading from '../../../Shared/Loading/ComponentLoading';
@@ -22,27 +22,47 @@ const AllArticles = () => {
     });
   }, []);
   
+  // State for pagination and filtering
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(8);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  
   // State for decline modal
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [declineReason, setDeclineReason] = useState('');
 
-  // Fetch all articles using TanStack Query
-  const { data: articles = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['allArticles'],
+  // Fetch articles with pagination using TanStack Query
+  const { data: articlesData = { data: [], pagination: {} }, isLoading, error, refetch } = useQuery({
+    queryKey: ['allArticles', currentPage, itemsPerPage],
     queryFn: async () => {
-      const response = await axiosSecure.get('/api/articles');
-      return response.data.data;
+      const response = await axiosSecure.get(`/api/articles?page=${currentPage}&limit=${itemsPerPage}`);
+      console.log('Pagination response:', response.data.pagination);
+      return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 10 * 60 * 1000, // 10 minutes
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Update pagination state
+      setTotalPages(data.pagination?.pages || 1);
+      setTotalItems(data.pagination?.total || 0);
+      console.log('Pagination data updated:', {
+        pages: data.pagination?.pages,
+        total: data.pagination?.total,
+        currentPage,
+        itemsPerPage
+      });
+      
       // Refresh AOS when articles load
       setTimeout(() => {
         AOS.refresh();
       }, 100);
     }
   });
+  
+  // Extract articles from response
+  const articles = articlesData.data || [];
 
   // Approve Article Mutation
   const approveArticleMutation = useMutation({
@@ -378,6 +398,104 @@ const AllArticles = () => {
     );
   };
 
+  // Handle page change
+  const handlePageChange = (page) => {
+    console.log('Changing to page:', page);
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle items per page change
+  const handleItemsPerPageChange = (e) => {
+    const newItemsPerPage = parseInt(e.target.value);
+    console.log('Changing items per page to:', newItemsPerPage);
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  // Pagination component for reuse
+  const PaginationControls = ({ className = "" }) => {
+    if (totalPages <= 1) return null;
+    
+    return (
+      <div className={`flex items-center justify-center ${className}`}>
+        <button 
+          onClick={() => handlePageChange(currentPage - 1)} 
+          disabled={currentPage === 1}
+          className={`p-2 rounded-md ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50'}`}
+        >
+          <FaChevronLeft />
+        </button>
+        
+        {/* First page */}
+        <button
+          onClick={() => handlePageChange(1)}
+          className={`w-8 h-8 flex items-center justify-center rounded-md ${
+            currentPage === 1 ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-blue-50'
+          }`}
+        >
+          1
+        </button>
+        
+        {/* Ellipsis for pages before current */}
+        {currentPage > 3 && <span className="px-1">...</span>}
+        
+        {/* Page before current */}
+        {currentPage > 2 && (
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            className="w-8 h-8 flex items-center justify-center rounded-md text-gray-700 hover:bg-blue-50"
+          >
+            {currentPage - 1}
+          </button>
+        )}
+        
+        {/* Current page (if not first or last) */}
+        {currentPage !== 1 && currentPage !== totalPages && (
+          <button
+            onClick={() => handlePageChange(currentPage)}
+            className="w-8 h-8 flex items-center justify-center rounded-md bg-blue-600 text-white"
+          >
+            {currentPage}
+          </button>
+        )}
+        
+        {/* Page after current */}
+        {currentPage < totalPages - 1 && (
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            className="w-8 h-8 flex items-center justify-center rounded-md text-gray-700 hover:bg-blue-50"
+          >
+            {currentPage + 1}
+          </button>
+        )}
+        
+        {/* Ellipsis for pages after current */}
+        {currentPage < totalPages - 2 && <span className="px-1">...</span>}
+        
+        {/* Last page (if not first) */}
+        {totalPages > 1 && (
+          <button
+            onClick={() => handlePageChange(totalPages)}
+            className={`w-8 h-8 flex items-center justify-center rounded-md ${
+              currentPage === totalPages ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-blue-50'
+            }`}
+          >
+            {totalPages}
+          </button>
+        )}
+        
+        <button 
+          onClick={() => handlePageChange(currentPage + 1)} 
+          disabled={currentPage === totalPages}
+          className={`p-2 rounded-md ${currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50'}`}
+        >
+          <FaChevronRight />
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
@@ -394,9 +512,41 @@ const AllArticles = () => {
               </div>
             </div>
             <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200" data-aos="fade-left" data-aos-delay="300">
-              <span className="text-blue-800 font-semibold">Total Articles: {articles.length}</span>
+              <span className="text-blue-800 font-semibold">Total Articles: {totalItems}</span>
             </div>
           </div>
+        </div>
+        
+        {/* Filter and Pagination Controls */}
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6" data-aos="fade-up" data-aos-delay="200">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <div className="flex items-center">
+              <div className="flex items-center space-x-2">
+                <FaFilter className="text-blue-600" />
+                <span className="text-gray-700 font-medium">Items per page:</span>
+                <select 
+                  value={itemsPerPage}
+                  onChange={handleItemsPerPageChange}
+                  className="border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="8">8</option>
+                  <option value="12">12</option>
+                  <option value="16">16</option>
+                  <option value="20">20</option>
+                  <option value="24">24</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <span className="text-sm text-gray-600">
+                Showing {articles.length ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+              </span>
+            </div>
+          </div>
+          
+          {/* Top Pagination Controls */}
+          <PaginationControls className="mt-2" />
         </div>
 
         {/* Articles List - Desktop View */}
@@ -735,6 +885,13 @@ const AllArticles = () => {
             >
               Refresh
             </button>
+          </div>
+        )}
+        
+        {/* Bottom Pagination Controls */}
+        {articles.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-4 mt-6" data-aos="fade-up">
+            <PaginationControls />
           </div>
         )}
 

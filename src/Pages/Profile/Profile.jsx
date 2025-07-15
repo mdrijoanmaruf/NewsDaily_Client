@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaCrown, FaCalendarAlt, FaEnvelope, FaEdit, FaNewspaper, FaEye, FaHeart, FaClock, FaShieldAlt } from 'react-icons/fa';
+import { FaUser, FaCrown, FaCalendarAlt, FaEnvelope, FaEdit, FaNewspaper, FaEye, FaHeart, FaClock, FaShieldAlt, FaSave, FaTimes, FaCamera } from 'react-icons/fa';
 import useAuth from '../../Hook/useAuth';
 import useAxios from '../../Hook/useAxios';
 import useUserRole from '../../Hook/useUserRole';
 import { Link } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import Swal from 'sweetalert2';
 
 const Profile = () => {
-  const { user, userProfileData, isPremium } = useAuth();
+  const { user, userProfileData, isPremium, updateUserProfile, fetchUserData } = useAuth();
   const { userRole } = useUserRole();
   const axios = useAxios();
   const [loading, setLoading] = useState(true);
@@ -18,6 +19,26 @@ const Profile = () => {
     totalViews: 0,
     premiumArticles: 0
   });
+  
+  // Edit profile state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    displayName: '',
+    photoURL: ''
+  });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+
+  // Initialize form data when user data is available
+  useEffect(() => {
+    if (user) {
+      setEditFormData({
+        displayName: user.displayName || '',
+        photoURL: user.photoURL || ''
+      });
+      setImagePreview(user.photoURL || null);
+    }
+  }, [user]);
 
   // Initialize AOS
   useEffect(() => {
@@ -95,6 +116,117 @@ const Profile = () => {
     }
   };
 
+  // Handle form input change
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Upload photo to ImgBB
+  const uploadPhotoToImgBB = async (photoFile) => {
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append('image', photoFile);
+      
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_ImgB_API_KEY}`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setImagePreview(data.data.url);
+        setEditFormData(prev => ({
+          ...prev,
+          photoURL: data.data.url
+        }));
+        return data.data.url;
+      } else {
+        throw new Error('Photo upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      Swal.fire({
+        title: 'Upload Failed',
+        text: 'Failed to upload image. Please try again.',
+        icon: 'error'
+      });
+      throw error;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Handle photo change
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        await uploadPhotoToImgBB(file);
+      } catch (error) {
+        console.error('Failed to upload image:', error);
+      }
+    }
+  };
+
+  // Save profile changes
+  const handleSaveProfile = async () => {
+    try {
+      setLoading(true);
+      
+      // Update Firebase profile
+      await updateUserProfile({
+        displayName: editFormData.displayName,
+        photoURL: editFormData.photoURL
+      });
+      
+      // Update database if needed
+      if (user?.email) {
+        await axios.put(`/api/users/${user.email}`, {
+          name: editFormData.displayName,
+          profileImage: editFormData.photoURL
+        });
+        
+        // Refresh user data
+        await fetchUserData(user.email);
+      }
+      
+      Swal.fire({
+        title: 'Success!',
+        text: 'Your profile has been updated successfully.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Swal.fire({
+        title: 'Update Failed',
+        text: 'Failed to update your profile. Please try again.',
+        icon: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditFormData({
+      displayName: user?.displayName || '',
+      photoURL: user?.photoURL || ''
+    });
+    setImagePreview(user?.photoURL || null);
+    setIsEditing(false);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Profile Header */}
@@ -105,39 +237,121 @@ const Profile = () => {
         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 h-32 md:h-48"></div>
         <div className="px-4 py-6 md:px-6 -mt-16 flex flex-wrap">
           <div className="relative">
-            <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-full border-4 border-white shadow-lg overflow-hidden">
-              {user?.photoURL ? (
-                <img 
-                  src={user.photoURL} 
-                  alt={user.displayName || 'User'} 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
-                  <FaUser size={48} />
-                </div>
-              )}
-            </div>
-            {isPremium && (
+            {isEditing ? (
+              <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-full border-4 border-white shadow-lg overflow-hidden relative">
+                {imagePreview ? (
+                  <img 
+                    src={imagePreview} 
+                    alt="Profile preview" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+                    <FaUser size={48} />
+                  </div>
+                )}
+                <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 cursor-pointer transition-opacity hover:bg-opacity-70">
+                  {uploadingImage ? (
+                    <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <FaCamera className="text-white text-2xl" />
+                  )}
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    disabled={uploadingImage}
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-full border-4 border-white shadow-lg overflow-hidden">
+                {user?.photoURL ? (
+                  <img 
+                    src={user.photoURL} 
+                    alt={user.displayName || 'User'} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+                    <FaUser size={48} />
+                  </div>
+                )}
+              </div>
+            )}
+            {isPremium && !isEditing && (
               <div className="absolute bottom-0 right-0 bg-gradient-to-r from-amber-500 to-yellow-400 text-white p-1 rounded-full w-8 h-8 flex items-center justify-center shadow-lg animate-pulse">
                 <FaCrown />
               </div>
             )}
           </div>
           <div className="ml-4 mt-8 md:mt-12 flex-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              {user?.displayName || 'User'}
-            </h1>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor()}`}>
-                {userRole?.charAt(0).toUpperCase() + userRole?.slice(1) || 'User'}
-              </span>
-              {isPremium && (
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-amber-500 to-yellow-400 text-white flex items-center gap-1">
-                  <FaCrown size={10} /> Premium
-                </span>
-              )}
-            </div>
+            {isEditing ? (
+              <div>
+                <input
+                  type="text"
+                  name="displayName"
+                  value={editFormData.displayName}
+                  onChange={handleInputChange}
+                  placeholder="Your name"
+                  className="text-xl md:text-2xl font-bold text-gray-900 bg-gray-100 border border-gray-300 rounded-md px-3 py-2 w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <div className="flex space-x-2 mt-4">
+                  <button
+                    onClick={handleSaveProfile}
+                    disabled={loading || !editFormData.displayName}
+                    className={`flex items-center px-4 py-2 rounded-md text-white ${
+                      loading || !editFormData.displayName ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                    }`}
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <FaSave className="mr-2" />
+                        Save
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md"
+                  >
+                    <FaTimes className="mr-2" />
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                    {user?.displayName || 'User'}
+                  </h1>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="ml-3 p-1 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-colors"
+                    title="Edit profile"
+                  >
+                    <FaEdit className="text-lg" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor()}`}>
+                    {userRole?.charAt(0).toUpperCase() + userRole?.slice(1) || 'User'}
+                  </span>
+                  {isPremium && (
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-amber-500 to-yellow-400 text-white flex items-center gap-1">
+                      <FaCrown size={10} /> Premium
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -354,7 +568,7 @@ const Profile = () => {
                 <FaNewspaper className="mx-auto text-gray-300 text-4xl mb-3" />
                 <p className="text-gray-500">You haven't published any articles yet.</p>
                 <Link 
-                  to="/add-article" 
+                  to="/add-articles" 
                   className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition duration-300"
                 >
                   Write Your First Article

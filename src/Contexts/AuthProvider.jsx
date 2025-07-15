@@ -8,7 +8,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   signInWithPopup,
-  onAuthStateChanged
+  onAuthStateChanged,
+  updateProfile
 } from "firebase/auth";
 
 const AuthProvider = ({ children }) => {
@@ -70,6 +71,31 @@ const AuthProvider = ({ children }) => {
     return signInWithPopup(auth, googleProvider);
   };
 
+  // Function to update user profile and refresh data
+  const updateUserProfile = async (profileData) => {
+    setLoading(true);
+    try {
+      if (!user) throw new Error("No user logged in");
+      
+      await updateProfile(user, profileData);
+      
+      // Force refresh the user object to get updated data
+      setUser({ ...user, ...profileData });
+      
+      // If email exists, also update database
+      if (user.email) {
+        await fetchUserData(user.email);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const unSubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -115,6 +141,7 @@ const AuthProvider = ({ children }) => {
     signInWithGoogle,
     checkSubscriptionStatus,
     fetchUserData,
+    updateUserProfile
   };
 
   return (
