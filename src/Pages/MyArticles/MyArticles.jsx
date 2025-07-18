@@ -182,18 +182,18 @@ const MyArticles = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8" data-aos="fade-down">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <FaNewspaper className="text-3xl text-blue-600 mr-4" />
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8" data-aos="fade-down">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <FaNewspaper className="text-2xl sm:text-3xl text-blue-600" />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">My Articles</h1>
-                <p className="text-gray-600 mt-1">Manage all your submitted articles</p>
+                <h1 className="text-xl sm:text-3xl font-bold text-gray-900">My Articles</h1>
+                <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage all your submitted articles</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-blue-600">{articles.length}</p>
-              <p className="text-sm text-gray-500">Total Articles</p>
+            <div className="text-left sm:text-right">
+              <p className="text-xl sm:text-2xl font-bold text-blue-600">{articles.length}</p>
+              <p className="text-xs sm:text-sm text-gray-500">Total Articles</p>
             </div>
           </div>
         </div>
@@ -241,38 +241,32 @@ const MyArticles = () => {
                   {articles.map((article, index) => (
                     <tr 
                       key={article._id} 
-                      className="hover:bg-gray-50 transition-colors"
+                      className={`transition-colors ${
+                        article.premium
+                          ? 'bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100 border-l-4 border-amber-400 hover:bg-amber-100'
+                          : 'hover:bg-gray-50'
+                      }`}
                       data-aos="fade-right"
                       data-aos-delay={index * 50}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {index + 1}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${article.premium ? 'text-amber-900' : 'text-gray-900'}`}>{index + 1}</td>
+                      <td className={`px-6 py-4 text-sm ${article.premium ? 'text-amber-900' : 'text-gray-900'}`}>
                         <div className="max-w-xs">
-                          <p className="font-medium truncate" title={article.title}>
-                            {article.title}
-                          </p>
-                          <p className="text-gray-500 text-xs mt-1">
-                            {new Date(article.createdAt).toLocaleDateString()}
-                          </p>
+                          <p className="font-medium truncate" title={article.title}>{article.title}</p>
+                          <p className={`mt-1 text-xs ${article.premium ? 'text-amber-700' : 'text-gray-500'}`}>{new Date(article.createdAt).toLocaleDateString()}</p>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => handleViewDetails(article._id)}
-                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
+                          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md ${article.premium ? 'text-amber-800 bg-amber-100 hover:bg-amber-200' : 'text-blue-700 bg-blue-100 hover:bg-blue-200'} transition-colors`}
                         >
                           <FaEye className="mr-2" />
                           View Details
                         </button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusDisplay(article)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getPremiumDisplay(article.premium)}
-                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">{getStatusDisplay(article)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{getPremiumDisplay(article.premium)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <button

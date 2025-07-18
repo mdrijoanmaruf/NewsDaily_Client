@@ -122,21 +122,21 @@ const AllArticlePage = () => {
       <div className="max-w-7xl mx-auto">
         
         {/* Header Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8" data-aos="fade-down">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8" data-aos="fade-down">
           <div className="text-center mb-6">
-            <div className="flex items-center justify-center mb-4">
-              <FaNewspaper className="text-4xl text-blue-600 mr-3" />
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-800">All Articles</h1>
+            <div className="flex flex-col xs:flex-row items-center justify-center mb-4 gap-2 xs:gap-4">
+              <FaNewspaper className="text-3xl sm:text-4xl text-blue-600 mr-0 xs:mr-3" />
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">All Articles</h1>
             </div>
-            <p className="text-lg text-gray-600">
+            <p className="text-base sm:text-lg text-gray-600">
               Discover the latest news and stories from our community
             </p>
           </div>
 
           {/* Search and Filter Section */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between" data-aos="fade-up" data-aos-delay="100">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-between flex-wrap" data-aos="fade-up" data-aos-delay="100">
             {/* Search Bar */}
-            <div className="relative flex-1 max-w-md">
+            <div className="relative flex-1 min-w-[180px] max-w-full sm:max-w-md w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <FaSearch className="h-5 w-5 text-gray-400" />
               </div>
@@ -145,17 +145,17 @@ const AllArticlePage = () => {
                 placeholder="Search articles..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="block w-full pl-10 pr-3 py-2 sm:py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               />
             </div>
 
             {/* Category Filter */}
-            <div className="flex items-center space-x-3">
-              <label className="text-sm font-medium text-gray-700">Category:</label>
+            <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Category:</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="flex-1 min-w-[120px] px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               >
                 {categories.map(category => (
                   <option key={category} value={category}>
@@ -166,8 +166,8 @@ const AllArticlePage = () => {
             </div>
 
             {/* Articles Count */}
-            <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
-              <span className="text-blue-800 font-semibold">
+            <div className="bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 text-center w-full sm:w-auto">
+              <span className="text-blue-800 font-semibold text-sm sm:text-base">
                 {filteredArticles.length} Article{filteredArticles.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -176,7 +176,7 @@ const AllArticlePage = () => {
 
         {/* Articles Grid */}
         {filteredArticles.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
             {filteredArticles.map((article, index) => (
               <div
                 key={article._id}
@@ -201,7 +201,7 @@ const AllArticlePage = () => {
                 )}
 
                 {/* Article Image */}
-                <div className="relative h-44 overflow-hidden">
+                <div className="relative h-40 xs:h-44 sm:h-48 md:h-44 lg:h-44 overflow-hidden">
                   <img
                     src={article.image || '/placeholder-article.jpg'}
                     alt={article.title}
@@ -214,16 +214,16 @@ const AllArticlePage = () => {
                 </div>
 
                 {/* Article Content */}
-                <div className="p-4 space-y-3">
+                <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                   {/* Article Title */}
-                  <h3 className={`text-lg font-bold leading-tight line-clamp-2 min-h-[3.5rem] ${
+                  <h3 className={`text-base sm:text-lg font-bold leading-tight line-clamp-2 min-h-[2.5rem] sm:min-h-[3.5rem] ${
                     article.premium ? 'text-amber-900' : 'text-gray-900'
                   }`}>
                     {article.title}
                   </h3>
 
                   {/* Article Meta Info */}
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-500 gap-1 sm:gap-0">
                     <div className="flex items-center">
                       <FaUser className={`mr-1 ${article.premium ? 'text-amber-500' : 'text-blue-500'}`} />
                       <span className="truncate max-w-20">{article.author?.name || 'Unknown'}</span>
@@ -236,7 +236,7 @@ const AllArticlePage = () => {
 
                   {/* Publisher Info */}
                   {article.publisher && (
-                    <div className="flex items-center text-xs text-gray-600">
+                    <div className="flex items-center text-xs text-gray-600 mt-1">
                       <FaNewspaper className={`mr-1 flex-shrink-0 ${article.premium ? 'text-amber-500' : 'text-blue-500'}`} />
                       <span className="font-medium truncate">{article.publisher}</span>
                     </div>
@@ -264,7 +264,7 @@ const AllArticlePage = () => {
                   )}
 
                   {/* Article Description */}
-                  <p className={`text-sm leading-relaxed line-clamp-2 min-h-[2.5rem] ${
+                  <p className={`text-xs sm:text-sm leading-relaxed line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem] ${
                     article.premium ? 'text-amber-700' : 'text-gray-600'
                   }`}>
                     {article.description}
@@ -273,7 +273,7 @@ const AllArticlePage = () => {
                   {/* Details Button */}
                   <button
                     onClick={() => handleViewDetails(article)}
-                    className={`w-full py-2.5 px-4 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center justify-center space-x-2 ${
+                    className={`w-full py-2 px-3 sm:py-2.5 sm:px-4 rounded-lg font-semibold text-xs sm:text-sm transition-all duration-300 flex items-center justify-center space-x-2 ${
                       article.premium && !hasPremiumSubscription
                         ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white hover:from-amber-600 hover:to-yellow-600 shadow-md hover:shadow-lg'
                         : article.premium
@@ -296,7 +296,7 @@ const AllArticlePage = () => {
 
                   {/* Premium Notice */}
                   {article.premium && !hasPremiumSubscription && (
-                    <p className="text-xs text-amber-600 text-center font-medium">
+                    <p className="text-xs text-amber-600 text-center font-medium mt-1">
                       Premium subscription required
                     </p>
                   )}

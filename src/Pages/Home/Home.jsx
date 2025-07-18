@@ -29,7 +29,7 @@ const Home = () => {
     if (!isPremium) {
       const timer = setTimeout(() => {
         setShowSubscriptionModal(true);
-      }, 5000); // 10 seconds
+      }, 10000); // 10 seconds
 
       return () => clearTimeout(timer); // Cleanup timeout on unmount
     }

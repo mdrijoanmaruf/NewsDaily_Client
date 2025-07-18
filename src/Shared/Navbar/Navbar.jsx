@@ -57,10 +57,15 @@ const Navbar = () => {
   // Navigation items
   const navigationItems = [
     { to: "/", label: "Home" },
-    { to: "/add-articles", label: "Add Articles" },
+    // Private routes only for logged in users
+    ...(isLoggedIn ? [
+      { to: "/add-articles", label: "Add Articles" },
+      { to: "/subscription", label: "Subscription" },
+      { to: "/my-articles", label: "My Articles" }
+    ] : []),
+    // Public routes
     { to: "/all-articles", label: "All Articles" },
-    { to: "/subscription", label: "Subscription" },
-    { to: "/my-articles", label: "My Articles" }
+    { to: "/premium-articles", label: "Premium Articles" }
   ]
 
   // Admin only navigation items
@@ -96,7 +101,8 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-lg border-b-2 border-blue-600">
+    <>
+      <nav className="bg-white/90 shadow-lg border-b-2 border-blue-600 fixed top-0 left-0 w-full z-50 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo Section */}
@@ -114,7 +120,7 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-1">
             {navigationItems.map((item) => (
               <Link 
                 key={item.to}
@@ -430,6 +436,9 @@ const Navbar = () => {
         )}
       </div>
     </nav>
+    {/* Spacer for fixed navbar height */}
+    <div className="h-16 md:h-16 lg:h-16" />
+    </>
   );
 };
 

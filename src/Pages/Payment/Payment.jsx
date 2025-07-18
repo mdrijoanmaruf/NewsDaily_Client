@@ -120,17 +120,11 @@ const PaymentForm = ({ planId, price, duration }) => {
           
           // Show success message and redirect
           Swal.fire({
-            title: '🎉 Payment Successful!',
+            title: 'Payment Successful!',
             text: 'You now have premium access to all articles.',
             icon: 'success',
-            confirmButtonText: 'Start Reading',
-            confirmButtonColor: '#10b981',
-            showClass: {
-              popup: 'animate__animated animate__fadeInUp'
-            },
-            hideClass: {
-              popup: 'animate__animated animate__fadeOutDown'
-            }
+            timer: 2000,
+            showConfirmButton: false
           }).then(() => {
             navigate('/all-articles');
           });

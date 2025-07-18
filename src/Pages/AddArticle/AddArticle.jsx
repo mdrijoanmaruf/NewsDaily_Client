@@ -515,32 +515,20 @@ const AddArticle = () => {
                         isClearable={true}
                         formatOptionLabel={({ label, logo }) => (
                           <div className="flex items-center">
-                            <img 
-                              src={logo} 
-                              alt={label}
-                              className="w-6 h-6 object-contain rounded mr-3"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                            <span>{label}</span>
-                          </div>
-                        )}
-                        components={{
-                          SingleValue: ({ children, data }) => (
-                            <div className="flex items-center">
+                            {logo && (
                               <img 
-                                src={data.logo} 
-                                alt={data.label}
-                                className="w-5 h-5 object-contain rounded mr-2"
+                                src={logo} 
+                                alt={label}
+                                className="w-6 h-6 object-contain rounded mr-2"
                                 onError={(e) => {
                                   e.target.style.display = 'none';
                                 }}
                               />
-                              <span>{children}</span>
-                            </div>
-                          )
-                        }}
+                            )}
+                            <span>{label}</span>
+                          </div>
+                        )}
+                        // No custom SingleValue component, use default
                       />
                     )}
                     {errors.publisher && (

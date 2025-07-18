@@ -205,7 +205,7 @@ const Hero = () => {
                     </Link>
                   )}
                   <Link 
-                    to="/add-article"
+                    to="/add-articles"
                     className="inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     <FaNewspaper className="mr-2" />

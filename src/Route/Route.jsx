@@ -22,6 +22,7 @@ import AdminRoute from "./AdminRoute";
 import Forbidden from "../Pages/Forbidden/Forbidden";
 import Dashboard from "../Pages/Dashboard/Dashboard/Dashboard";
 import Profile from "../Pages/Profile/Profile";
+import PremiumArticles from "../Pages/PremiumArticles/PremiumArticles";
 
 export const router = createBrowserRouter([
   {
@@ -53,11 +54,17 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "/all-articles",
+        path: "/premium-articles",
         element: (
           <PrivateRoute>
-            <AllArticlePage></AllArticlePage>
+            <PremiumArticles></PremiumArticles>
           </PrivateRoute>
+        ),
+      },
+      {
+        path: "/all-articles",
+        element: (
+            <AllArticlePage></AllArticlePage>
         ),
       },
       {
