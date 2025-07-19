@@ -1,37 +1,29 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FaBuilding, FaCalendarAlt, FaEye, FaSpinner, FaUsers } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import useAxios from '../../Hook/useAxios';
 
 const AllPublisher = () => {
-  const [publishers, setPublishers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const axiosSecure = useAxios();
+  // TanStack Query for publishers
+  const {
+    data: publishers = [],
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['publishers'],
+    queryFn: async () => {
+      const response = await axiosSecure.get('/api/publishers');
+      if (response.data.success) {
+        return response.data.data;
+      }
+      throw new Error('Failed to fetch publishers');
+    }
+  });
   const navigate = useNavigate();
 
-  // Fetch publishers from API
-  useEffect(() => {
-    const fetchPublishers = async () => {
-      try {
-        setIsLoading(true);
-        const response = await axiosSecure.get('/api/publishers');
-        
-        if (response.data.success) {
-          setPublishers(response.data.data);
-        } else {
-          setError('Failed to fetch publishers');
-        }
-      } catch (error) {
-        console.error('Error fetching publishers:', error);
-        setError('Failed to load publishers');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPublishers();
-  }, [axiosSecure]);
 
   // Format date for display
   const formatDate = (dateString) => {

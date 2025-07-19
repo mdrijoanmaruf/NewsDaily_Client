@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEdit, FaTrash, FaInfoCircle, FaNewspaper, FaCrown, FaCheckCircle, FaTimesCircle, FaClock } from 'react-icons/fa';
 import useAuth from '../../Hook/useAuth';
@@ -11,8 +12,30 @@ const MyArticles = () => {
   const { user } = useAuth();
   const axios = useAxios();
   const navigate = useNavigate();
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  // TanStack Query for articles
+  const {
+    data: allArticles = [],
+    isLoading: loading,
+    isError,
+    error
+  } = useQuery({
+    queryKey: ['articles'],
+    queryFn: async () => {
+      const response = await axios.get('/api/articles');
+      if (response.data.success) {
+        return response.data.data;
+      }
+      throw new Error('Failed to fetch articles');
+    }
+  });
+
+  // Filter articles by current user's email
+  const articles = React.useMemo(() => {
+    return allArticles.filter(
+      article => article.author?.email === user?.email
+    );
+  }, [allArticles, user]);
   const [declineReasonModal, setDeclineReasonModal] = useState({ isOpen: false, reason: '', articleTitle: '' });
 
   // Initialize AOS
@@ -24,34 +47,6 @@ const MyArticles = () => {
     });
   }, []);
 
-  // Fetch user's articles
-  useEffect(() => {
-    fetchMyArticles();
-  }, [user]);
-
-  const fetchMyArticles = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('/api/articles');
-      
-      // Filter articles by current user's email
-      const userArticles = response.data.data.filter(
-        article => article.author?.email === user?.email
-      );
-      
-      setArticles(userArticles);
-    } catch (error) {
-      console.error('Error fetching articles:', error);
-      Swal.fire({
-        title: 'Error!',
-        text: 'Failed to fetch your articles. Please try again.',
-        icon: 'error',
-        confirmButtonColor: '#ef4444'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Handle article details navigation
   const handleViewDetails = (articleId) => {
@@ -79,16 +74,14 @@ const MyArticles = () => {
     if (result.isConfirmed) {
       try {
         await axios.delete(`/api/articles/${articleId}`);
-        
         Swal.fire({
           title: '🎉 Deleted!',
           text: 'Article has been deleted successfully.',
           icon: 'success',
           confirmButtonColor: '#10b981'
         });
-
-        // Refresh articles list
-        fetchMyArticles();
+        // Invalidate and refetch articles query
+        queryClient.invalidateQueries(['articles']);
       } catch (error) {
         console.error('Error deleting article:', error);
         Swal.fire({

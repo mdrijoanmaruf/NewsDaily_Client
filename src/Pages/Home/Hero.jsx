@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaSearch, FaNewspaper, FaCrown, FaUsers, FaChartLine, FaArrowRight, FaPlay, FaSpinner } from 'react-icons/fa';
 import useAuth from '../../Hook/useAuth';
@@ -10,11 +11,36 @@ const Hero = () => {
   const { user, isPremium, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const axiosSecure = useAxios();
-  const [stats, setStats] = useState({
-    totalArticles: 0,
-    totalUsers: 0,
-    totalViews: 0
+  // TanStack Query for articles
+  const { data: articles = [], isLoading: articlesLoading } = useQuery({
+    queryKey: ['articles'],
+    queryFn: async () => {
+      const response = await axiosSecure.get('/api/articles');
+      if (response.data.success) {
+        return response.data.data;
+      }
+      return [];
+    }
   });
+
+  // TanStack Query for users
+  const { data: users = [], isLoading: usersLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const response = await axiosSecure.get('/api/users');
+      if (response.data) {
+        return response.data;
+      }
+      return [];
+    }
+  });
+
+  // Calculate stats from query data
+  const stats = {
+    totalArticles: articles.length,
+    totalUsers: users.length,
+    totalViews: articles.reduce((sum, article) => sum + (article.views || 0), 0)
+  };
   const [premiumLoading, setPremiumLoading] = useState(true);
 
   // Initialize AOS
@@ -28,39 +54,6 @@ const Hero = () => {
     });
   }, []);
 
-  // Fetch website statistics
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Fetch articles for count and total views
-        const articlesResponse = await axiosSecure.get('/api/articles');
-        if (articlesResponse.data.success) {
-          const articles = articlesResponse.data.data;
-          const totalArticles = articles.length;
-          const totalViews = articles.reduce((sum, article) => sum + (article.views || 0), 0);
-          
-          setStats(prev => ({
-            ...prev,
-            totalArticles,
-            totalViews
-          }));
-        }
-
-        // Fetch users count
-        const usersResponse = await axiosSecure.get('/api/users');
-        if (usersResponse.data) {
-          setStats(prev => ({
-            ...prev,
-            totalUsers: usersResponse.data.length || 0
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-      }
-    };
-
-    fetchStats();
-  }, [axiosSecure]);
 
   // Set premium loading state based on auth loading
   useEffect(() => {

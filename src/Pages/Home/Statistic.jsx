@@ -1,72 +1,60 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import CountUp from 'react-countup';
 import { FaUsers, FaCrown, FaUserFriends, FaNewspaper, FaEye, FaChartLine } from 'react-icons/fa';
 import useAxios from '../../Hook/useAxios';
 
 const Statistic = () => {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    normalUsers: 0,
-    premiumUsers: 0,
-    totalArticles: 0,
-    totalViews: 0,
-    publishedArticles: 0
+  // TanStack Query for users
+  const { data: users = [], isLoading: usersLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const response = await axiosSecure.get('/api/users');
+      if (response.data) {
+        return response.data;
+      }
+      return [];
+    }
   });
+
+  // TanStack Query for articles
+  const { data: articles = [], isLoading: articlesLoading } = useQuery({
+    queryKey: ['articles'],
+    queryFn: async () => {
+      const response = await axiosSecure.get('/api/articles');
+      if (response.data.success) {
+        return response.data.data;
+      }
+      return [];
+    }
+  });
+
+  // Calculate statistics from query data
+  const totalUsers = users.length;
+  const premiumUsers = users.filter(user => {
+    if (user.subscriptionEndDate) {
+      const endDate = new Date(user.subscriptionEndDate);
+      const currentDate = new Date();
+      return currentDate < endDate;
+    }
+    return false;
+  }).length;
+  const normalUsers = totalUsers - premiumUsers;
+  const totalArticles = articles.length;
+  const publishedArticles = articles.filter(article => article.status === 'published').length;
+  const totalViews = articles.reduce((sum, article) => sum + (article.views || 0), 0);
+
+  const stats = {
+    totalUsers,
+    normalUsers,
+    premiumUsers,
+    totalArticles,
+    totalViews,
+    publishedArticles
+  };
   const [isVisible, setIsVisible] = useState(false);
   const axiosSecure = useAxios();
 
-  // Fetch statistics from API
-  useEffect(() => {
-    const fetchStatistics = async () => {
-      try {
-        // Fetch users data
-        const usersResponse = await axiosSecure.get('/api/users');
-        if (usersResponse.data) {
-          const users = usersResponse.data;
-          const totalUsers = users.length;
-          
-          // Count premium users (users with active subscription)
-          const premiumUsers = users.filter(user => {
-            if (user.subscriptionEndDate) {
-              const endDate = new Date(user.subscriptionEndDate);
-              const currentDate = new Date();
-              return currentDate < endDate;
-            }
-            return false;
-          }).length;
-          
-          const normalUsers = totalUsers - premiumUsers;
-          
-          setStats(prev => ({
-            ...prev,
-            totalUsers,
-            normalUsers,
-            premiumUsers
-          }));
-        }
-
-        // Fetch articles data
-        const articlesResponse = await axiosSecure.get('/api/articles');
-        if (articlesResponse.data.success) {
-          const articles = articlesResponse.data.data;
-          const totalArticles = articles.length;
-          const publishedArticles = articles.filter(article => article.status === 'published').length;
-          const totalViews = articles.reduce((sum, article) => sum + (article.views || 0), 0);
-          
-          setStats(prev => ({
-            ...prev,
-            totalArticles,
-            publishedArticles,
-            totalViews
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching statistics:', error);
-      }
-    };
-
-    fetchStatistics();
-  }, [axiosSecure]);
 
   // Intersection Observer for triggering animation when section becomes visible
   useEffect(() => {

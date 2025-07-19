@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import Select from 'react-select'
 import { FaNewspaper, FaImage, FaUser, FaTags, FaFileAlt, FaUpload } from 'react-icons/fa'
 import useAuth from '../../Hook/useAuth'
-import useAxios from '../../Hook/useAxios'
+import useAxiosSecure from '../../Hook/useAxiosSecure'
 import Swal from 'sweetalert2'
 
 const AddArticle = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const axios = useAxios()
+  const axios = useAxiosSecure()
   
   const [formData, setFormData] = useState({
     title: '',
@@ -23,8 +24,28 @@ const AddArticle = () => {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [imageUploading, setImageUploading] = useState(false)
-  const [publishers, setPublishers] = useState([])
-  const [publishersLoading, setPublishersLoading] = useState(true)
+  // TanStack Query for publishers
+  const {
+    data: publishersData,
+    isLoading: publishersLoading,
+    error: publishersError,
+    refetch: refetchPublishers
+  } = useQuery({
+    queryKey: ['publishers'],
+    queryFn: async () => {
+      const response = await axios.get('/api/publishers');
+      if (response.data.success) {
+        // Transform publisher data to react-select format
+        return response.data.data.map(publisher => ({
+          value: publisher._id,
+          label: publisher.name,
+          logo: publisher.logo,
+          data: publisher
+        }));
+      }
+      return [];
+    }
+  });
 
   // ImgBB API configuration
   const imgbbAPIKey = import.meta.env.VITE_ImgB_API_KEY
@@ -54,45 +75,7 @@ const AddArticle = () => {
     { value: 'feature', label: 'Feature Story' }
   ]
 
-  // Fetch publishers from API
-  const fetchPublishers = async () => {
-    try {
-      setPublishersLoading(true)
-      const response = await axios.get('/api/publishers')
-      
-      if (response.data.success) {
-        // Transform publisher data to react-select format
-        const publisherOptions = response.data.data.map(publisher => ({
-          value: publisher._id,
-          label: publisher.name,
-          logo: publisher.logo,
-          data: publisher
-        }))
-        setPublishers(publisherOptions)
-      } else {
-        console.error('Failed to fetch publishers:', response.data.message)
-        Swal.fire({
-          title: 'Error',
-          text: 'Failed to load publishers. Please refresh the page.',
-          icon: 'error'
-        })
-      }
-    } catch (error) {
-      console.error('Error fetching publishers:', error)
-      Swal.fire({
-        title: 'Error',
-        text: 'Failed to load publishers. Please check your connection.',
-        icon: 'error'
-      })
-    } finally {
-      setPublishersLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    // Fetch publishers when component mounts
-    fetchPublishers()
-  }, [])
+  // Remove fetchPublishers and useEffect, handled by TanStack Query
 
   // Function to upload image to ImgBB
   const uploadImageToImgBB = async (imageFile) => {
@@ -222,7 +205,6 @@ const AddArticle = () => {
       ...prev,
       publisher: selectedPublisher ? selectedPublisher.value : ''
     }))
-    
     // Clear publisher error
     if (errors.publisher) {
       setErrors(prev => ({
@@ -501,8 +483,8 @@ const AddArticle = () => {
                       </div>
                     ) : (
                       <Select
-                        options={publishers}
-                        value={publishers.find(p => p.value === formData.publisher) || null}
+                        options={publishersData || []}
+                        value={(publishersData || []).find(p => p.value === formData.publisher) || null}
                         onChange={handlePublisherChange}
                         placeholder="Select a publisher..."
                         styles={selectStyles}
@@ -534,7 +516,7 @@ const AddArticle = () => {
                     {errors.publisher && (
                       <p className="mt-2 text-sm text-red-600 animate-fade-in">{errors.publisher}</p>
                     )}
-                    {!publishersLoading && publishers.length === 0 && (
+                    {!publishersLoading && (!publishersData || publishersData.length === 0) && (
                       <p className="mt-2 text-sm text-yellow-600">
                         No publishers available. Please contact admin to add publishers.
                       </p>

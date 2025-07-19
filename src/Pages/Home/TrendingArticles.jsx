@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay, EffectFade } from 'swiper/modules';
 import { FaArrowLeft, FaArrowRight, FaClock, FaUser, FaEye, FaSpinner, FaLock } from 'react-icons/fa';
@@ -14,45 +15,34 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 
 const TrendingArticles = () => {
-  const [trendingArticles, setTrendingArticles] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // TanStack Query for articles
+  const {
+    data: articles = [],
+    isLoading,
+    isError,
+    error
+  } = useQuery({
+    queryKey: ['articles'],
+    queryFn: async () => {
+      const response = await axiosSecure.get('/api/articles');
+      if (response.data.success) {
+        return response.data.data;
+      }
+      throw new Error('Failed to fetch articles');
+    }
+  });
+
+  // Filter and sort trending articles
+  const trendingArticles = React.useMemo(() => {
+    const publishedArticles = articles.filter(article => article.status === 'published');
+    return publishedArticles
+      .sort((a, b) => (b.views || 0) - (a.views || 0))
+      .slice(0, 6);
+  }, [articles]);
   const axiosSecure = useAxios();
   const navigate = useNavigate();
   const { user, isPremium } = useAuth();
 
-  // Fetch trending articles from API
-  useEffect(() => {
-    const fetchTrendingArticles = async () => {
-      try {
-        setIsLoading(true);
-        const response = await axiosSecure.get('/api/articles');
-        
-        if (response.data.success) {
-          // Filter published articles and sort by views (descending) to get trending ones
-          const publishedArticles = response.data.data.filter(article => 
-            article.status === 'published'
-          );
-          
-          // Sort by views in descending order and take top 6
-          const sortedByViews = publishedArticles
-            .sort((a, b) => (b.views || 0) - (a.views || 0))
-            .slice(0, 6);
-          
-          setTrendingArticles(sortedByViews);
-        } else {
-          setError('Failed to fetch articles');
-        }
-      } catch (error) {
-        console.error('Error fetching trending articles:', error);
-        setError('Failed to load trending articles');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTrendingArticles();
-  }, [axiosSecure]);
 
   // Format views count for display
   const formatViews = (views) => {
@@ -177,7 +167,7 @@ const TrendingArticles = () => {
   }
 
   // Error state
-  if (error) {
+if (isError) {
     return (
       <div className="relative bg-gradient-to-br from-blue-50 to-indigo-100 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -207,7 +197,7 @@ const TrendingArticles = () => {
   }
 
   // No articles state
-  if (trendingArticles.length === 0) {
+if (!isLoading && trendingArticles.length === 0) {
     return (
       <div className="relative bg-gradient-to-br from-blue-50 to-indigo-100 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

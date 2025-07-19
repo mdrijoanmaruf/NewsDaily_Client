@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import useAxios from '../../../Hook/useAxios';
+import useAxiosSecure from '../../../Hook/useAxiosSecure';
 import { FaUserShield, FaEnvelope, FaUsers, FaCrown } from 'react-icons/fa';
 import { HiOutlineSparkles } from 'react-icons/hi';
 import Swal from 'sweetalert2';
 import AOS from 'aos';
 
 const AllUsers = () => {
-  const axios = useAxios();
+  const axios = useAxiosSecure();
   const queryClient = useQueryClient();
 
   // Initialize AOS

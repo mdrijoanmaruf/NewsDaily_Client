@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from '@tanstack/react-query';
 import { AuthContext } from "./AuthContext";
 import { auth } from "../Firebase/firebase.init";
 import useAxios from "../Hook/useAxios";
@@ -16,37 +17,44 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
-  const [userProfileData, setUserProfileData] = useState(null);
   
   // Use the custom axios hook
   const axios = useAxios();
 
-  const fetchUserData = async (email) => {
-    try {
-      const response = await axios.get(`/api/users/${email}`);
+  // TanStack Query for user profile data
+  const {
+    data: userProfileData,
+    isLoading: userProfileLoading,
+    refetch: refetchUserProfile
+  } = useQuery({
+    queryKey: ["userProfileData", user?.email],
+    queryFn: async () => {
+      if (!user?.email) return null;
+      const response = await axios.get(`/api/users/${user.email}`);
       if (response.data.success) {
-        const userData = response.data.data;
-        setUserProfileData(userData);
-        
-        // Check if user has active subscription based on subscriptionEndDate
-        if (userData.subscriptionEndDate) {
-          const endDate = new Date(userData.subscriptionEndDate);
-          const currentDate = new Date();
-          setIsPremium(currentDate < endDate);
-        } else {
-          setIsPremium(false);
-        }
+        return response.data.data;
       }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
+      return null;
+    },
+    enabled: !!user?.email
+  });
+
+  // Update isPremium when userProfileData changes
+  useEffect(() => {
+    if (userProfileData && userProfileData.subscriptionEndDate) {
+      const endDate = new Date(userProfileData.subscriptionEndDate);
+      const currentDate = new Date();
+      setIsPremium(currentDate < endDate);
+    } else {
       setIsPremium(false);
-      setUserProfileData(null);
     }
-  };
+  }, [userProfileData]);
 
   // Legacy method for backward compatibility
   const checkSubscriptionStatus = async (email) => {
-    await fetchUserData(email);
+    if (email) {
+      await refetchUserProfile();
+    }
   };
 
   const createUser = (email, password) => {
@@ -76,17 +84,11 @@ const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       if (!user) throw new Error("No user logged in");
-      
       await updateProfile(user, profileData);
-      
-      // Force refresh the user object to get updated data
       setUser({ ...user, ...profileData });
-      
-      // If email exists, also update database
       if (user.email) {
-        await fetchUserData(user.email);
+        await refetchUserProfile();
       }
-      
       return true;
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -101,13 +103,9 @@ const AuthProvider = ({ children }) => {
       setUser(currentUser);
       console.log("User in the onAuthStateChange : ", currentUser);
       setLoading(false);
-      
-      // Fetch complete user data when user logs in
-      if (currentUser?.email) {
-        fetchUserData(currentUser.email);
-      } else {
+      // No need to manually fetch user data, TanStack Query will handle it
+      if (!currentUser?.email) {
         setIsPremium(false);
-        setUserProfileData(null);
       }
     });
     return () => {
@@ -117,10 +115,11 @@ const AuthProvider = ({ children }) => {
 
   // Periodically check subscription status
   useEffect(() => {
+    // Optionally, you can refetch user profile data periodically
     let interval;
     if (user?.email) {
       interval = setInterval(() => {
-        fetchUserData(user.email);
+        refetchUserProfile();
       }, 60000); // Check every minute
     }
     return () => {
@@ -128,7 +127,7 @@ const AuthProvider = ({ children }) => {
         clearInterval(interval);
       }
     };
-  }, [user]);
+  }, [user, refetchUserProfile]);
 
   const authInfo = {
     user,
@@ -140,7 +139,6 @@ const AuthProvider = ({ children }) => {
     logOut,
     signInWithGoogle,
     checkSubscriptionStatus,
-    fetchUserData,
     updateUserProfile
   };
 

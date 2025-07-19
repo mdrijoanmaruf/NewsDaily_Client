@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import Select from 'react-select'
 import { FaNewspaper, FaImage, FaUser, FaTags, FaFileAlt, FaUpload, FaEdit } from 'react-icons/fa'
@@ -24,9 +25,6 @@ const UpdateArticle = () => {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [imageUploading, setImageUploading] = useState(false)
-  const [publishers, setPublishers] = useState([])
-  const [publishersLoading, setPublishersLoading] = useState(true)
-  const [articleLoading, setArticleLoading] = useState(true)
   const [originalArticle, setOriginalArticle] = useState(null)
 
   // ImgBB API configuration
@@ -58,94 +56,77 @@ const UpdateArticle = () => {
   ]
 
   // Fetch article details for updating
-  const fetchArticleDetails = async () => {
-    try {
-      setArticleLoading(true)
+  // TanStack Query for article details
+  const {
+    data: articleData,
+    isLoading: articleLoading,
+    isError: articleError
+  } = useQuery({
+    queryKey: ['article', id],
+    queryFn: async () => {
       const response = await axios.get(`/api/articles/${id}`)
-      
       if (response.data.success) {
-        const article = response.data.data
-        setOriginalArticle(article)
-        
-        // Check if user owns this article
-        if (article.author?.email !== user?.email) {
-          Swal.fire({
-            title: 'Access Denied',
-            text: 'You can only update your own articles.',
-            icon: 'error'
-          }).then(() => {
-            navigate('/my-articles')
-          })
-          return
-        }
-
-        // Pre-fill form with existing data
-        setFormData({
-          title: article.title || '',
-          image: null,
-          imageUrl: article.image || '',
-          publisher: article.publisherId || '',
-          tags: article.tags?.map(tag => ({ value: tag, label: tagOptions.find(opt => opt.value === tag)?.label || tag })) || [],
-          description: article.description || ''
-        })
-      } else {
-        throw new Error(response.data.message || 'Failed to fetch article')
+        return response.data.data
       }
-    } catch (error) {
-      console.error('Error fetching article:', error)
-      Swal.fire({
-        title: 'Error!',
-        text: 'Failed to load article details. Please try again.',
-        icon: 'error'
-      }).then(() => {
-        navigate('/my-articles')
+      throw new Error(response.data.message || 'Failed to fetch article')
+    },
+    enabled: !!id
+  })
+
+  // Pre-fill form and check ownership when articleData changes
+  useEffect(() => {
+    if (articleData) {
+      setOriginalArticle(articleData)
+      if (articleData.author?.email !== user?.email) {
+        Swal.fire({
+          title: 'Access Denied',
+          text: 'You can only update your own articles.',
+          icon: 'error'
+        }).then(() => {
+          navigate('/my-articles')
+        })
+        return
+      }
+      setFormData({
+        title: articleData.title || '',
+        image: null,
+        imageUrl: articleData.image || '',
+        publisher: articleData.publisherId || '',
+        tags: articleData.tags?.map(tag => ({ value: tag, label: tagOptions.find(opt => opt.value === tag)?.label || tag })) || [],
+        description: articleData.description || ''
       })
-    } finally {
-      setArticleLoading(false)
     }
-  }
+  }, [articleData, user, navigate])
 
   // Fetch publishers from API
-  const fetchPublishers = async () => {
-    try {
-      setPublishersLoading(true)
+  // TanStack Query for publishers
+  const {
+    data: publishersRaw = [],
+    isLoading: publishersLoading,
+    isError: publishersError
+  } = useQuery({
+    queryKey: ['publishers'],
+    queryFn: async () => {
       const response = await axios.get('/api/publishers')
-      
       if (response.data.success) {
-        // Transform publisher data to react-select format
-        const publisherOptions = response.data.data.map(publisher => ({
-          value: publisher._id,
-          label: publisher.name,
-          logo: publisher.logo,
-          data: publisher
-        }))
-        setPublishers(publisherOptions)
-      } else {
-        console.error('Failed to fetch publishers:', response.data.message)
-        Swal.fire({
-          title: 'Error',
-          text: 'Failed to load publishers. Please refresh the page.',
-          icon: 'error'
-        })
+        return response.data.data
       }
-    } catch (error) {
-      console.error('Error fetching publishers:', error)
-      Swal.fire({
-        title: 'Error',
-        text: 'Failed to load publishers. Please check your connection.',
-        icon: 'error'
-      })
-    } finally {
-      setPublishersLoading(false)
+      throw new Error(response.data.message || 'Failed to fetch publishers')
     }
-  }
+  })
+
+  // Transform publisher data for react-select
+  const publishers = React.useMemo(() => {
+    return publishersRaw.map(publisher => ({
+      value: publisher._id,
+      label: publisher.name,
+      logo: publisher.logo,
+      data: publisher
+    }))
+  }, [publishersRaw])
 
   useEffect(() => {
-    // Fetch publishers and article details when component mounts
-    fetchPublishers()
-    if (id) {
-      fetchArticleDetails()
-    }
+    // No need to fetch manually, queries handle fetching
   }, [id])
 
   // Function to upload image to ImgBB

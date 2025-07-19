@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaUser, FaCalendar, FaNewspaper, FaTag, FaCrown, FaEye, FaShare } from 'react-icons/fa';
-import useAxios from '../../Hook/useAxios';
+import useAxiosSecure from '../../Hook/useAxiosSecure';
 import useAuth from '../../Hook/useAuth';
 import ComponentLoading from '../../Shared/Loading/ComponentLoading';
 import AOS from 'aos';
@@ -10,7 +10,7 @@ import AOS from 'aos';
 const ArticleDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const axios = useAxios();
+  const axios = useAxiosSecure();
   const { user, isPremium } = useAuth();
 
   // Initialize AOS

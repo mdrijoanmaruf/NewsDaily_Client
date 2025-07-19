@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaCreditCard, FaLock, FaCheck, FaCrown, FaArrowLeft, FaShieldAlt } from 'react-icons/fa';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -290,22 +291,39 @@ const Payment = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Extract plan details from location state (preferred) or URL params (fallback)
+  // Extract planId from location or URL
   const planData = location.state || {};
   const urlParams = new URLSearchParams(location.search);
-  
   const planId = planData.plan || urlParams.get('plan');
-  const price = planData.price || urlParams.get('price');
-  const duration = planData.duration || urlParams.get('duration') || planId;
 
-  // Redirect if no plan selected
+  // TanStack Query for plan details (if planId exists)
+  const { data: planDetails, isLoading: planLoading, isError: planError } = useQuery({
+    queryKey: ['plan', planId],
+    queryFn: async () => {
+      if (!planId) return null;
+      // Replace with your actual endpoint for plan details
+      const axios = useAxios();
+      const response = await axios.get(`/api/plans/${planId}`);
+      if (response.data.success) {
+        return response.data.data;
+      }
+      throw new Error('Failed to fetch plan details');
+    },
+    enabled: !!planId
+  });
+
+  // Use plan details from query if available, else fallback to location/URL
+  const price = planDetails?.price || planData.price || urlParams.get('price');
+  const duration = planDetails?.duration || planData.duration || urlParams.get('duration') || planId;
+
+  // Redirect if no plan selected or plan fetch failed
   useEffect(() => {
-    if (!planId || !price) {
+    if (!planId || !price || planError) {
       navigate('/subscription');
     }
-  }, [planId, price, navigate]);
+  }, [planId, price, planError, navigate]);
 
-  if (!planId || !price) {
+  if (!planId || !price || planLoading) {
     return null;
   }
 

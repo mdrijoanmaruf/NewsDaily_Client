@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FaUser, FaCrown, FaCalendarAlt, FaEnvelope, FaEdit, FaNewspaper, FaEye, FaHeart, FaClock, FaShieldAlt, FaSave, FaTimes, FaCamera } from 'react-icons/fa';
 import useAuth from '../../Hook/useAuth';
 import useAxios from '../../Hook/useAxios';
@@ -12,13 +13,40 @@ const Profile = () => {
   const { user, userProfileData, isPremium, updateUserProfile, fetchUserData } = useAuth();
   const { userRole } = useUserRole();
   const axios = useAxios();
-  const [loading, setLoading] = useState(true);
-  const [articles, setArticles] = useState([]);
-  const [stats, setStats] = useState({
-    totalArticles: 0,
-    totalViews: 0,
-    premiumArticles: 0
+  // TanStack Query for articles
+  const {
+    data: allArticles = [],
+    isLoading: loading,
+    isError,
+    error
+  } = useQuery({
+    queryKey: ['articles'],
+    queryFn: async () => {
+      const response = await axios.get('/api/articles');
+      if (response.data.success) {
+        return response.data.data;
+      }
+      throw new Error('Failed to fetch articles');
+    }
   });
+
+  // Filter articles by current user's email
+  const articles = React.useMemo(() => {
+    return allArticles.filter(
+      article => article.author?.email === user?.email
+    );
+  }, [allArticles, user]);
+
+  // Calculate stats from articles
+  const stats = React.useMemo(() => {
+    const totalViews = articles.reduce((sum, article) => sum + (article.views || 0), 0);
+    const premiumCount = articles.filter(article => article.isPremium).length;
+    return {
+      totalArticles: articles.length,
+      totalViews,
+      premiumArticles: premiumCount
+    };
+  }, [articles]);
   
   // Edit profile state
   const [isEditing, setIsEditing] = useState(false);
@@ -49,40 +77,6 @@ const Profile = () => {
     });
   }, []);
 
-  // Fetch user's articles and stats
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!user?.email) return;
-      
-      try {
-        setLoading(true);
-        
-        // Fetch user's articles
-        const articlesResponse = await axios.get('/api/articles');
-        const userArticles = articlesResponse.data.data.filter(
-          article => article.author?.email === user.email
-        );
-        
-        setArticles(userArticles);
-        
-        // Calculate stats
-        const totalViews = userArticles.reduce((sum, article) => sum + (article.views || 0), 0);
-        const premiumCount = userArticles.filter(article => article.isPremium).length;
-        
-        setStats({
-          totalArticles: userArticles.length,
-          totalViews: totalViews,
-          premiumArticles: premiumCount
-        });
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUserData();
-  }, [user]);
 
   // Format date
   const formatDate = (dateString) => {
