@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import Select from 'react-select'
-import { FaNewspaper, FaImage, FaUser, FaTags, FaFileAlt, FaUpload } from 'react-icons/fa'
+import { FaNewspaper, FaImage, FaUser, FaTags, FaFileAlt, FaUpload, FaCrown } from 'react-icons/fa'
 import useAuth from '../../Hook/useAuth'
 import useAxiosSecure from '../../Hook/useAxiosSecure'
 import Swal from 'sweetalert2'
 
 const AddArticle = () => {
-  const { user } = useAuth()
+  const { user, isPremium } = useAuth()
   const navigate = useNavigate()
   const axios = useAxiosSecure()
+  const [userArticleCount, setUserArticleCount] = useState(0)
+  const [isLoadingCount, setIsLoadingCount] = useState(true)
   
   const [formData, setFormData] = useState({
     title: '',
@@ -20,6 +22,30 @@ const AddArticle = () => {
     tags: [],
     description: ''
   })
+  
+  // Fetch user's article count
+  useEffect(() => {
+    const fetchArticleCount = async () => {
+      if (user?.email) {
+        try {
+          setIsLoadingCount(true)
+          const response = await axios.get(`/api/user-article-count/${user.email}`)
+          if (response.data.success) {
+            setUserArticleCount(response.data.count)
+          }
+        } catch (error) {
+          console.error('Error fetching article count:', error)
+        } finally {
+          setIsLoadingCount(false)
+        }
+      }
+    }
+    
+    fetchArticleCount()
+  }, [user, axios])
+  
+  // Check if user can submit new article
+  const canSubmitArticle = isPremium || userArticleCount < 1
   
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -229,7 +255,7 @@ const AddArticle = () => {
 
     if (!formData.publisher) {
       newErrors.publisher = 'Please select a publisher'
-    } else if (publishers.length === 0) {
+    } else if (!publishersData || publishersData.length === 0) {
       newErrors.publisher = 'No publishers available. Please contact admin.'
     }
 
@@ -248,6 +274,25 @@ const AddArticle = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // If user isn't premium and already has 1 or more articles, show premium message
+    if (!canSubmitArticle) {
+      Swal.fire({
+        title: 'Premium Required',
+        text: 'You need to upgrade to premium to post more than one article.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Go to subscription',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#3085d6',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/subscription')
+        }
+      })
+      return
+    }
+    
     setLoading(true)
 
     // Validate form
@@ -263,7 +308,7 @@ const AddArticle = () => {
       const articleData = {
         title: formData.title.trim(),
         image: formData.imageUrl, // Use the uploaded image URL from ImgBB
-        publisher: publishers.find(p => p.value === formData.publisher)?.label || formData.publisher,
+        publisher: publishersData.find(p => p.value === formData.publisher)?.label || formData.publisher,
         publisherId: formData.publisher, // Store publisher ID for reference
         tags: formData.tags.map(tag => tag.value),
         description: formData.description.trim(),
@@ -306,6 +351,9 @@ const AddArticle = () => {
         // Reset file input
         const fileInput = document.getElementById('image')
         if (fileInput) fileInput.value = ''
+
+        // Update article count
+        setUserArticleCount(prev => prev + 1)
 
         // Navigate to home page
         setTimeout(() => {
@@ -581,34 +629,67 @@ const AddArticle = () => {
                   </div>
                 </div>
 
+                {/* User Status Message */}
+                <div className="pt-2 pb-1 text-center">
+                  {isPremium ? (
+                    <p className="text-green-600 font-medium flex items-center justify-center">
+                      <FaCrown className="mr-2" />
+                      You are a premium user. You can post unlimited articles.
+                    </p>
+                  ) : (
+                    <p className="text-amber-600 font-medium flex items-center justify-center">
+                      <FaUser className="mr-2" />
+                      You are a normal user. You can post only one article. Buy premium to post unlimited.
+                    </p>
+                  )}
+                </div>
+
                 {/* Submit Button */}
                 <div className="pt-6" >
-                  <button
-                    type="submit"
-                    disabled={loading || imageUploading}
-                    className={`hover-lift w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-lg shadow-lg text-lg font-semibold text-white ${
-                      loading || imageUploading
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-                    } transition-all duration-300 transform hover:scale-105`}
-                  >
-                    {loading ? (
+                  {canSubmitArticle ? (
+                    <button
+                      type="submit"
+                      disabled={loading || imageUploading}
+                      className={`hover-lift w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-lg shadow-lg text-lg font-semibold text-white ${
+                        loading || imageUploading || isLoadingCount
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                      } transition-all duration-300 transform hover:scale-105`}
+                    >
+                      {loading ? (
+                        <div className="flex items-center">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                          Submitting Article...
+                        </div>
+                      ) : imageUploading ? (
+                        <div className="flex items-center">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                          Uploading Image...
+                        </div>
+                      ) : isLoadingCount ? (
+                        <div className="flex items-center">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                          Checking Article Limit...
+                        </div>
+                      ) : (
+                        <div className="flex items-center">
+                          <FaUpload className="w-5 h-5 mr-3" />
+                          Submit Article for Approval
+                        </div>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/subscription')}
+                      className="hover-lift w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-lg shadow-lg text-lg font-semibold text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-300 transform hover:scale-105"
+                    >
                       <div className="flex items-center">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                        Submitting Article...
+                        <FaCrown className="w-5 h-5 mr-3" />
+                        Buy Premium to Post More Articles
                       </div>
-                    ) : imageUploading ? (
-                      <div className="flex items-center">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                        Uploading Image...
-                      </div>
-                    ) : (
-                      <div className="flex items-center">
-                        <FaUpload className="w-5 h-5 mr-3" />
-                        Submit Article for Approval
-                      </div>
-                    )}
-                  </button>
+                    </button>
+                  )}
                 </div>
               </form>
             </div>
