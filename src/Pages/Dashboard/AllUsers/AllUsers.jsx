@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useAxiosSecure from '../../../Hook/useAxiosSecure';
-import { FaUserShield, FaEnvelope, FaUsers, FaCrown } from 'react-icons/fa';
+import { FaUserShield, FaEnvelope, FaUsers, FaCrown, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
 import { HiOutlineSparkles } from 'react-icons/hi';
 import Swal from 'sweetalert2';
 import AOS from 'aos';
@@ -9,7 +9,11 @@ import AOS from 'aos';
 const AllUsers = () => {
   const axios = useAxiosSecure();
   const queryClient = useQueryClient();
-
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(4);
+  
   // Initialize AOS
   useEffect(() => {
     AOS.init({
@@ -21,10 +25,10 @@ const AllUsers = () => {
   }, []);
 
   // Fetch all users using TanStack Query
-  const { data: users = [], isLoading, error } = useQuery({
-    queryKey: ['users'],
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['users', currentPage, itemsPerPage],
     queryFn: async () => {
-      const response = await axios.get('/api/users');
+      const response = await axios.get(`/api/users?page=${currentPage}&limit=${itemsPerPage}`);
       return response.data;
     },
     onSuccess: () => {
@@ -34,6 +38,34 @@ const AllUsers = () => {
       }, 100);
     }
   });
+  
+  // Extract users and pagination data
+  const users = data?.users || [];
+  const pagination = data?.pagination || {
+    totalUsers: 0,
+    totalPages: 0,
+    currentPage: 1,
+    hasNextPage: false,
+    hasPrevPage: false
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+  
+  // Handle items per page change
+  const handleItemsPerPageChange = (e) => {
+    const newLimit = parseInt(e.target.value);
+    setItemsPerPage(newLimit);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  // Generate page numbers for pagination
+  const pageNumbers = [];
+  for (let i = 1; i <= pagination.totalPages; i++) {
+    pageNumbers.push(i);
+  }
 
   // Mutation for making user admin
   const makeAdminMutation = useMutation({
@@ -190,15 +222,35 @@ const AllUsers = () => {
             </div>
           </div>
           
-          {/* Stats Card */}
+          {/* Stats Card with Pagination Controls */}
           <div className="bg-white rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-5 border border-blue-100" data-aos="fade-up" data-aos-delay="200">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-2 sm:p-3 rounded-lg">
-                <HiOutlineSparkles className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-2 sm:p-3 rounded-lg">
+                  <HiOutlineSparkles className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-lg sm:text-xl font-bold text-gray-900">{pagination.totalUsers}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Total Users</p>
+                </div>
               </div>
-              <div>
-                <p className="text-lg sm:text-xl font-bold text-gray-900">{users.length}</p>
-                <p className="text-xs sm:text-sm text-gray-600">Total Users</p>
+              
+              {/* Items Per Page Dropdown */}
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <label htmlFor="itemsPerPage" className="text-xs sm:text-sm text-gray-700 font-medium">
+                  Show:
+                </label>
+                <select
+                  id="itemsPerPage"
+                  value={itemsPerPage}
+                  onChange={handleItemsPerPageChange}
+                  className="form-select rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm"
+                >
+                  <option value="4">4 users</option>
+                  <option value="8">8 users</option>
+                  <option value="12">12 users</option>
+                  <option value="20">20 users</option>
+                </select>
               </div>
             </div>
           </div>
@@ -419,9 +471,63 @@ const AllUsers = () => {
           )}
         </div>
 
-        {/* Footer Info */}
+        {/* Pagination Controls */}
+        {pagination.totalPages > 1 && (
+          <div className="mt-4 flex justify-center" data-aos="fade-up" data-aos-delay="400">
+            <div className="flex items-center gap-1 sm:gap-2 bg-white p-2 rounded-lg shadow-md border border-blue-100">
+              {/* Previous Button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={!pagination.hasPrevPage}
+                className={`flex items-center justify-center w-8 h-8 rounded-md ${
+                  pagination.hasPrevPage 
+                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200'
+                    : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                }`}
+                aria-label="Previous page"
+              >
+                <FaAngleLeft className="w-3 h-3" />
+              </button>
+              
+              {/* Page Numbers */}
+              {pageNumbers.map(number => (
+                <button
+                  key={number}
+                  onClick={() => handlePageChange(number)}
+                  className={`flex items-center justify-center w-8 h-8 rounded-md text-xs font-medium transition-all duration-200 ${
+                    number === currentPage
+                      ? 'bg-blue-500 text-white shadow-sm'
+                      : 'bg-white text-gray-700 hover:bg-blue-50'
+                  }`}
+                >
+                  {number}
+                </button>
+              ))}
+              
+              {/* Next Button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!pagination.hasNextPage}
+                className={`flex items-center justify-center w-8 h-8 rounded-md ${
+                  pagination.hasNextPage
+                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200'
+                    : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                }`}
+                aria-label="Next page"
+              >
+                <FaAngleRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Pagination Info */}
         <div className="mt-3 sm:mt-4 text-center text-xs text-gray-500" data-aos="fade-up" data-aos-delay="500">
-          <p>Total {users.length} user{users.length !== 1 ? 's' : ''} registered</p>
+          <p>
+            Showing {users.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} 
+            {" - "}
+            {Math.min(currentPage * itemsPerPage, pagination.totalUsers)} of {pagination.totalUsers} users
+          </p>
         </div>
       </div>
     </div>
