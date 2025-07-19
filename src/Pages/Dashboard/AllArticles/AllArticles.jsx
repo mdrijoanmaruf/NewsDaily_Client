@@ -5,22 +5,12 @@ import useAxiosSecure from '../../../Hook/useAxiosSecure';
 import useAuth from '../../../Hook/useAuth';
 import ComponentLoading from '../../../Shared/Loading/ComponentLoading';
 import Swal from 'sweetalert2';
-import AOS from 'aos';
 
 const AllArticles = () => {
   const axiosSecure = useAxiosSecure();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Initialize AOS
-  useEffect(() => {
-    AOS.init({
-      duration: 800,
-      once: false,
-      mirror: true,
-      easing: 'ease-out-back'
-    });
-  }, []);
   
   // State for pagination and filtering
   const [currentPage, setCurrentPage] = useState(1);
@@ -53,16 +43,11 @@ const AllArticles = () => {
         currentPage,
         itemsPerPage
       });
-      
-      // Refresh AOS when articles load
-      setTimeout(() => {
-        AOS.refresh();
-      }, 100);
     }
   });
   
   // Extract articles from response
-  const articles = articlesData.data || [];
+  const articles = Array.isArray(articlesData.data) ? articlesData.data : [];
 
   // Approve Article Mutation
   const approveArticleMutation = useMutation({
@@ -500,7 +485,7 @@ const AllArticles = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6" data-aos="fade-down" data-aos-duration="600">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -511,14 +496,14 @@ const AllArticles = () => {
                 <p className="text-gray-600">Manage and review all submitted articles</p>
               </div>
             </div>
-            <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200" data-aos="fade-left" data-aos-delay="300">
+            <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
               <span className="text-blue-800 font-semibold">Total Articles: {totalItems}</span>
             </div>
           </div>
         </div>
         
         {/* Filter and Pagination Controls */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6" data-aos="fade-up" data-aos-delay="200">
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div className="flex items-center">
               <div className="flex items-center space-x-2">
@@ -529,6 +514,7 @@ const AllArticles = () => {
                   onChange={handleItemsPerPageChange}
                   className="border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
+                  <option value="4">4</option>
                   <option value="8">8</option>
                   <option value="12">12</option>
                   <option value="16">16</option>
@@ -550,7 +536,7 @@ const AllArticles = () => {
         </div>
 
         {/* Articles List - Desktop View */}
-        <div className="hidden lg:block bg-white rounded-lg shadow-md overflow-hidden" data-aos="fade-up" data-aos-delay="400">
+        <div className="hidden lg:block bg-white rounded-lg shadow-md overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
@@ -566,9 +552,6 @@ const AllArticles = () => {
                 {articles.map((article, index) => (
                   <tr 
                     key={article._id} 
-                    data-aos="fade-up" 
-                    data-aos-delay={100 + (index * 30)} 
-                    data-aos-anchor-placement="top-bottom"
                     className={`hover:bg-blue-50 transition-colors ${
                     article.premium 
                       ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-l-4 border-amber-400' 
@@ -723,8 +706,6 @@ const AllArticles = () => {
           {articles.map((article, index) => (
             <div 
               key={article._id} 
-              data-aos="fade-up" 
-              data-aos-delay={150 + (index * 50)}
               className={`rounded-lg shadow-md p-4 border ${
               article.premium 
                 ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300 border-l-4 border-l-amber-500' 
@@ -875,7 +856,7 @@ const AllArticles = () => {
 
         {/* Empty State */}
         {articles.length === 0 && (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center" data-aos="zoom-in" data-aos-delay="300">
+          <div className="bg-white rounded-lg shadow-md p-12 text-center">
             <div className="text-6xl mb-4">📰</div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">No Articles Found</h3>
             <p className="text-gray-600 mb-4">There are no articles to display at the moment.</p>
@@ -890,8 +871,26 @@ const AllArticles = () => {
         
         {/* Bottom Pagination Controls */}
         {articles.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-4 mt-6" data-aos="fade-up">
+          <div className="bg-white rounded-lg shadow-md p-4 mt-6">
             <PaginationControls />
+            {/* Direct page number buttons */}
+            {totalPages > 1 && (
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`px-3 py-1 rounded-md border font-medium transition-colors ${
+                      currentPage === pageNum
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-blue-600 border-blue-300 hover:bg-blue-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
