@@ -240,9 +240,9 @@ const AddPublisher = () => {
     });
   };
 
-  // Filter publishers by search term
+  // Filter publishers by search term - with null check
   const filteredPublishers = publishers.filter(publisher => 
-    publisher.name.toLowerCase().includes(searchTerm.toLowerCase())
+    publisher?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (

@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { FaSearch, FaNewspaper, FaUser, FaCalendar, FaCrown, FaEye, FaLock } from 'react-icons/fa';
+import { FaSearch, FaNewspaper, FaUser, FaCalendar, FaCrown, FaEye, FaLock, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
 import useAxios from '../../Hook/useAxios';
 import useAuth from '../../Hook/useAuth';
 import ComponentLoading from '../../Shared/Loading/ComponentLoading';
@@ -12,24 +12,73 @@ const PremiumArticles = () => {
   const navigate = useNavigate();
   const axios = useAxios();
   const { isPremium } = useAuth();
-  const [searchTerm, setSearchTerm] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(8);
 
   useEffect(() => {
     AOS.init({ duration: 800, once: false, mirror: true });
   }, []);
 
-  // Fetch only premium published articles
-  const { data: articles = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['premiumArticles'],
+  // Fetch premium published articles with pagination
+  const { data: articlesData = { data: [], pagination: {} }, isLoading, error, refetch } = useQuery({
+    queryKey: ['premiumArticles', currentPage, itemsPerPage, searchTerm, selectedCategory],
     queryFn: async () => {
-      const response = await axios.get('/api/articles?search=' + encodeURIComponent(searchTerm) + '&category=' + encodeURIComponent(selectedCategory));
-      // Only published and premium
-      return (response.data.data || []).filter(article => article.status === 'published' && article.premium);
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append('page', currentPage);
+      params.append('limit', itemsPerPage);
+      
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+      
+      if (selectedCategory !== 'all') {
+        params.append('category', selectedCategory);
+      }
+      
+      const response = await axios.get(`/api/premium-articles?${params.toString()}`);
+      return response.data;
     },
     staleTime: 5 * 60 * 1000,
     cacheTime: 10 * 60 * 1000,
   });
+  
+  // Extract data
+  const articles = articlesData.data || [];
+  const pagination = articlesData.pagination || {
+    totalArticles: 0,
+    totalPages: 0,
+    currentPage: 1,
+    hasNextPage: false,
+    hasPrevPage: false
+  };
+  
+  // Generate page numbers for pagination
+  const pageNumbers = [];
+  for (let i = 1; i <= pagination.totalPages; i++) {
+    pageNumbers.push(i);
+  }
+
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle search and filter changes
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); // Reset to first page when changing search
+  };
+  
+  const handleCategoryChange = (e) => {
+    setSelectedCategory(e.target.value);
+    setCurrentPage(1); // Reset to first page when changing category
+  };
 
   useEffect(() => {
     if (articles.length > 0) {
@@ -116,7 +165,7 @@ const PremiumArticles = () => {
                 type="text"
                 placeholder="Search premium articles..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
                 className="block w-full pl-10 pr-3 py-2 sm:py-3 border border-amber-300 rounded-lg placeholder-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm sm:text-base"
               />
             </div>
@@ -126,7 +175,7 @@ const PremiumArticles = () => {
               <label className="text-sm font-medium text-amber-700 whitespace-nowrap">Category:</label>
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={handleCategoryChange}
                 className="flex-1 min-w-[120px] px-3 py-2 sm:px-4 sm:py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm sm:text-base"
               >
                 {categories.map(category => (
@@ -140,8 +189,26 @@ const PremiumArticles = () => {
             {/* Articles Count */}
             <div className="bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 text-center w-full sm:w-auto">
               <span className="text-amber-800 font-semibold text-sm sm:text-base">
-                {articles.length} Premium Article{articles.length !== 1 ? 's' : ''}
+                {pagination.totalArticles} Premium Article{pagination.totalArticles !== 1 ? 's' : ''}
               </span>
+            </div>
+            
+            {/* Items Per Page Control */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <label className="text-sm font-medium text-amber-700 whitespace-nowrap">Show:</label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(parseInt(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-2 py-2 sm:px-3 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+              >
+                <option value="4">4</option>
+                <option value="8">8</option>
+                <option value="12">12</option>
+                <option value="16">16</option>
+              </select>
             </div>
           </div>
         </div>
@@ -269,12 +336,76 @@ const PremiumArticles = () => {
                 onClick={() => {
                   setSearchTerm('');
                   setSelectedCategory('all');
+                  setCurrentPage(1);
                 }}
                 className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
               >
                 Clear Filters
               </button>
             )}
+          </div>
+        )}
+        
+        {/* Pagination Controls */}
+        {pagination.totalPages > 1 && (
+          <div className="mt-8 flex justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-2 bg-white p-3 rounded-lg shadow-md border border-amber-200">
+              {/* Previous Button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={!pagination.hasPrevPage}
+                className={`flex items-center justify-center w-10 h-10 rounded-md ${
+                  pagination.hasPrevPage 
+                    ? 'bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors duration-200'
+                    : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                }`}
+                aria-label="Previous page"
+              >
+                <FaAngleLeft className="w-4 h-4" />
+              </button>
+              
+              {/* Page Numbers */}
+              <div className="flex flex-wrap justify-center gap-1">
+                {pageNumbers.map(number => (
+                  <button
+                    key={number}
+                    onClick={() => handlePageChange(number)}
+                    className={`flex items-center justify-center min-w-[36px] h-10 px-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      number === currentPage
+                        ? 'bg-amber-600 text-white shadow-sm'
+                        : 'bg-white text-gray-800 hover:bg-amber-50 border border-gray-200'
+                    }`}
+                  >
+                    {number}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Next Button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!pagination.hasNextPage}
+                className={`flex items-center justify-center w-10 h-10 rounded-md ${
+                  pagination.hasNextPage
+                    ? 'bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors duration-200'
+                    : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                }`}
+                aria-label="Next page"
+              >
+                <FaAngleRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Pagination Info */}
+        {pagination.totalArticles > 0 && (
+          <div className="mt-3 text-center text-sm text-amber-700">
+            <p>
+              Showing {articles.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} 
+              {" - "}
+              {Math.min(currentPage * itemsPerPage, pagination.totalArticles)} of {pagination.totalArticles} premium articles
+            </p>
           </div>
         )}
       </div>

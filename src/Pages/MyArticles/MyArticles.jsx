@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { FaEye, FaEdit, FaTrash, FaInfoCircle, FaNewspaper, FaCrown, FaCheckCircle, FaTimesCircle, FaClock } from 'react-icons/fa';
+import { FaEye, FaEdit, FaTrash, FaInfoCircle, FaNewspaper, FaCrown, FaCheckCircle, FaTimesCircle, FaClock, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
 import useAuth from '../../Hook/useAuth';
 import useAxios from '../../Hook/useAxios';
 import Swal from 'sweetalert2';
@@ -13,30 +13,54 @@ const MyArticles = () => {
   const axios = useAxios();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  // TanStack Query for articles
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [declineReasonModal, setDeclineReasonModal] = useState({ isOpen: false, reason: '', articleTitle: '' });
+
+  // TanStack Query for user's articles with pagination
   const {
-    data: allArticles = [],
+    data: articlesData = { data: [], pagination: {} },
     isLoading: loading,
     isError,
-    error
+    error,
+    refetch
   } = useQuery({
-    queryKey: ['articles'],
+    queryKey: ['myArticles', user?.email, currentPage, itemsPerPage],
     queryFn: async () => {
-      const response = await axios.get('/api/articles');
+      if (!user?.email) return { data: [], pagination: { totalArticles: 0, totalPages: 0 } };
+      
+      const response = await axios.get(`/api/my-articles/${user.email}?page=${currentPage}&limit=${itemsPerPage}`);
       if (response.data.success) {
-        return response.data.data;
+        return response.data;
       }
       throw new Error('Failed to fetch articles');
-    }
+    },
+    enabled: !!user?.email
   });
 
-  // Filter articles by current user's email
-  const articles = React.useMemo(() => {
-    return allArticles.filter(
-      article => article.author?.email === user?.email
-    );
-  }, [allArticles, user]);
-  const [declineReasonModal, setDeclineReasonModal] = useState({ isOpen: false, reason: '', articleTitle: '' });
+  // Extract data
+  const articles = articlesData.data || [];
+  const pagination = articlesData.pagination || {
+    totalArticles: 0,
+    totalPages: 0,
+    currentPage: 1,
+    hasNextPage: false,
+    hasPrevPage: false
+  };
+  
+  // Generate page numbers for pagination
+  const pageNumbers = [];
+  for (let i = 1; i <= pagination.totalPages; i++) {
+    pageNumbers.push(i);
+  }
+
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Initialize AOS
   useEffect(() => {
@@ -80,8 +104,14 @@ const MyArticles = () => {
           icon: 'success',
           confirmButtonColor: '#10b981'
         });
-        // Invalidate and refetch articles query
-        queryClient.invalidateQueries(['articles']);
+        
+        // If this was the last item on the page and not the first page, go back one page
+        if (articles.length === 1 && currentPage > 1) {
+          setCurrentPage(prev => prev - 1);
+        } else {
+          // Otherwise, just refetch the current page
+          queryClient.invalidateQueries(['myArticles', user?.email, currentPage, itemsPerPage]);
+        }
       } catch (error) {
         console.error('Error deleting article:', error);
         Swal.fire({
@@ -184,9 +214,30 @@ const MyArticles = () => {
                 <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage all your submitted articles</p>
               </div>
             </div>
-            <div className="text-left sm:text-right">
-              <p className="text-xl sm:text-2xl font-bold text-blue-600">{articles.length}</p>
-              <p className="text-xs sm:text-sm text-gray-500">Total Articles</p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              {/* Items Per Page Control */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Show:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(parseInt(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="4">4</option>
+                  <option value="6">6</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                </select>
+              </div>
+              
+              <div className="text-left sm:text-right">
+                <p className="text-xl sm:text-2xl font-bold text-blue-600">{pagination.totalArticles}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Total Articles</p>
+              </div>
             </div>
           </div>
         </div>
@@ -242,7 +293,7 @@ const MyArticles = () => {
                       data-aos="fade-right"
                       data-aos-delay={index * 50}
                     >
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${article.premium ? 'text-amber-900' : 'text-gray-900'}`}>{index + 1}</td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${article.premium ? 'text-amber-900' : 'text-gray-900'}`}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                       <td className={`px-6 py-4 text-sm ${article.premium ? 'text-amber-900' : 'text-gray-900'}`}>
                         <div className="max-w-xs">
                           <p className="font-medium truncate" title={article.title}>{article.title}</p>
@@ -285,6 +336,69 @@ const MyArticles = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+        
+        {/* Pagination Controls */}
+        {pagination.totalPages > 1 && (
+          <div className="mt-6 flex justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-2 bg-white p-3 rounded-lg shadow-md border border-gray-200">
+              {/* Previous Button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={!pagination.hasPrevPage}
+                className={`flex items-center justify-center w-10 h-10 rounded-md ${
+                  pagination.hasPrevPage 
+                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200'
+                    : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                }`}
+                aria-label="Previous page"
+              >
+                <FaAngleLeft className="w-4 h-4" />
+              </button>
+              
+              {/* Page Numbers */}
+              <div className="flex flex-wrap justify-center gap-1">
+                {pageNumbers.map(number => (
+                  <button
+                    key={number}
+                    onClick={() => handlePageChange(number)}
+                    className={`flex items-center justify-center min-w-[36px] h-10 px-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      number === currentPage
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-white text-gray-800 hover:bg-blue-50 border border-gray-200'
+                    }`}
+                  >
+                    {number}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Next Button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!pagination.hasNextPage}
+                className={`flex items-center justify-center w-10 h-10 rounded-md ${
+                  pagination.hasNextPage
+                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200'
+                    : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                }`}
+                aria-label="Next page"
+              >
+                <FaAngleRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Pagination Info */}
+        {pagination.totalArticles > 0 && pagination.totalPages > 1 && (
+          <div className="mt-3 text-center text-sm text-gray-600">
+            <p>
+              Showing {articles.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} 
+              {" - "}
+              {Math.min(currentPage * itemsPerPage, pagination.totalArticles)} of {pagination.totalArticles} articles
+            </p>
           </div>
         )}
 

@@ -24,22 +24,25 @@ const Hero = () => {
   });
 
   // TanStack Query for users
-  const { data: users = [], isLoading: usersLoading } = useQuery({
+  const { data: usersData = { users: [], pagination: {} }, isLoading: usersLoading } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
       const response = await axiosSecure.get('/api/users');
       if (response.data) {
         return response.data;
       }
-      return [];
+      return { users: [], pagination: {} };
     }
   });
+  
+  // Extract users from response
+  const users = usersData?.users || [];
 
-  // Calculate stats from query data
+  // Calculate stats from query data with safety checks
   const stats = {
-    totalArticles: articles.length,
-    totalUsers: users.length,
-    totalViews: articles.reduce((sum, article) => sum + (article.views || 0), 0)
+    totalArticles: Array.isArray(articles) ? articles.length : 0,
+    totalUsers: Array.isArray(users) ? users.length : 0,
+    totalViews: Array.isArray(articles) ? articles.reduce((sum, article) => sum + (article?.views || 0), 0) : 0
   };
   const [premiumLoading, setPremiumLoading] = useState(true);
 
@@ -69,6 +72,11 @@ const Hero = () => {
 
   // Format numbers for display
   const formatNumber = (num) => {
+    // Handle undefined or null values
+    if (num === undefined || num === null) {
+      return '0';
+    }
+    
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1) + 'M';
     }

@@ -5,55 +5,41 @@ import { FaUsers, FaCrown, FaUserFriends, FaNewspaper, FaEye, FaChartLine } from
 import useAxios from '../../Hook/useAxios';
 
 const Statistic = () => {
-  // TanStack Query for users
-  const { data: users = [], isLoading: usersLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const response = await axiosSecure.get('/api/users');
-      if (response.data) {
-        return response.data;
-      }
-      return [];
-    }
-  });
-
-  // TanStack Query for articles
-  const { data: articles = [], isLoading: articlesLoading } = useQuery({
-    queryKey: ['articles'],
-    queryFn: async () => {
-      const response = await axiosSecure.get('/api/articles');
-      if (response.data.success) {
-        return response.data.data;
-      }
-      return [];
-    }
-  });
-
-  // Calculate statistics from query data
-  const totalUsers = users.length;
-  const premiumUsers = users.filter(user => {
-    if (user.subscriptionEndDate) {
-      const endDate = new Date(user.subscriptionEndDate);
-      const currentDate = new Date();
-      return currentDate < endDate;
-    }
-    return false;
-  }).length;
-  const normalUsers = totalUsers - premiumUsers;
-  const totalArticles = articles.length;
-  const publishedArticles = articles.filter(article => article.status === 'published').length;
-  const totalViews = articles.reduce((sum, article) => sum + (article.views || 0), 0);
-
-  const stats = {
-    totalUsers,
-    normalUsers,
-    premiumUsers,
-    totalArticles,
-    totalViews,
-    publishedArticles
-  };
-  const [isVisible, setIsVisible] = useState(false);
   const axiosSecure = useAxios();
+  const [isVisible, setIsVisible] = useState(false);
+  
+  // TanStack Query for statistics
+  const { data: statsData, isLoading: statsLoading } = useQuery({
+    queryKey: ['statistics'],
+    queryFn: async () => {
+      const response = await axiosSecure.get('/api/statistics');
+      if (response.data && response.data.success) {
+        return response.data.statistics;
+      }
+      // Default values if no data is returned
+      return {
+        users: { total: 0, premium: 0, normal: 0 },
+        articles: { total: 0, published: 0, views: 0 }
+      };
+    }
+  });
+  
+  // Default stats if data is still loading
+  const stats = statsLoading ? {
+    totalUsers: 0,
+    premiumUsers: 0, 
+    normalUsers: 0,
+    totalArticles: 0,
+    publishedArticles: 0,
+    totalViews: 0
+  } : {
+    totalUsers: statsData?.users?.total || 0,
+    premiumUsers: statsData?.users?.premium || 0,
+    normalUsers: statsData?.users?.normal || 0,
+    totalArticles: statsData?.articles?.total || 0,
+    publishedArticles: statsData?.articles?.published || 0,
+    totalViews: statsData?.articles?.views || 0
+  };
 
 
   // Intersection Observer for triggering animation when section becomes visible
@@ -135,6 +121,18 @@ const Statistic = () => {
       iconColor: 'text-red-600'
     }
   ];
+
+  // Loading state
+  if (statsLoading) {
+    return (
+      <div id="statistics-section" className="relative bg-gradient-to-br from-gray-50 to-blue-50 py-20">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600"></div>
+          <p className="ml-4 text-lg font-medium text-blue-600">Loading statistics...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div id="statistics-section" className="relative bg-gradient-to-br from-gray-50 to-blue-50 py-20">
