@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FaEye, FaCheck, FaTimes, FaTrash, FaCrown, FaUser, FaEnvelope, FaCalendar, FaTag, FaNewspaper } from 'react-icons/fa';
+import { FaEye, FaCheck, FaTimes, FaTrash, FaCrown, FaUser, FaEnvelope, FaCalendar, FaTag, FaNewspaper, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
 import useAxiosSecure from '../../../Hook/useAxiosSecure';
 import useAuth from '../../../Hook/useAuth';
 import ComponentLoading from '../../../Shared/Loading/ComponentLoading';
@@ -11,24 +11,53 @@ const AllArticles = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  
   // State for decline modal
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [declineReason, setDeclineReason] = useState('');
 
-  // Fetch all articles using TanStack Query
-  const { data: articlesData = { data: [] }, isLoading, error, refetch } = useQuery({
-    queryKey: ['allArticles'],
+  // Fetch all articles using TanStack Query with pagination
+  const { data: articlesData = { data: [], pagination: {} }, isLoading, error, refetch } = useQuery({
+    queryKey: ['allArticles', currentPage, itemsPerPage],
     queryFn: async () => {
-      const response = await axiosSecure.get('/api/articles');
+      const response = await axiosSecure.get(`/api/articles?page=${currentPage}&limit=${itemsPerPage}`);
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 10 * 60 * 1000, // 10 minutes
   });
   
-  // Extract articles from response
+  // Extract articles and pagination data from response
   const articles = Array.isArray(articlesData.data) ? articlesData.data : [];
+  const pagination = articlesData.pagination || {
+    totalArticles: 0,
+    totalPages: 0,
+    currentPage: 1,
+    hasNextPage: false,
+    hasPrevPage: false
+  };
+  
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+  
+  // Handle items per page change
+  const handleItemsPerPageChange = (e) => {
+    const newLimit = parseInt(e.target.value);
+    setItemsPerPage(newLimit);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+  
+  // Generate page numbers for pagination
+  const pageNumbers = [];
+  for (let i = 1; i <= pagination.totalPages; i++) {
+    pageNumbers.push(i);
+  }
 
   // Approve Article Mutation
   const approveArticleMutation = useMutation({
@@ -312,8 +341,8 @@ const AllArticles = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center p-8 bg-red-50 rounded-lg border border-red-200" data-aos="fade-in">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center p-8 bg-red-50 rounded-lg border border-red-200">
           <div className="text-red-600 text-xl mb-2">⚠️ Error Loading Articles</div>
           <p className="text-red-700 mb-4">Failed to load articles. Please try again.</p>
           <button 
@@ -367,7 +396,7 @@ const AllArticles = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6" data-aos="fade-up" data-aos-duration="600">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -381,14 +410,33 @@ const AllArticles = () => {
                 <p className="text-gray-600">Manage and review all submitted articles</p>
               </div>
             </div>
-            <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
-              <span className="text-blue-800 font-semibold">Total Articles: {articles.length}</span>
+            <div className="flex items-center gap-4">
+              {/* Items Per Page Dropdown */}
+              <div className="flex items-center gap-2">
+                <label htmlFor="articlesPerPage" className="text-xs sm:text-sm text-gray-700 font-medium">
+                  Show:
+                </label>
+                <select
+                  id="articlesPerPage"
+                  value={itemsPerPage}
+                  onChange={handleItemsPerPageChange}
+                  className="form-select rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm"
+                >
+                  <option value="5">5 articles</option>
+                  <option value="10">10 articles</option>
+                  <option value="15">15 articles</option>
+                  <option value="20">20 articles</option>
+                </select>
+              </div>
+              <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                <span className="text-blue-800 font-semibold">Total Articles: {pagination.totalArticles}</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Articles List - Desktop View */}
-        <div className="hidden lg:block bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="hidden lg:block bg-white rounded-lg shadow-md overflow-hidden" data-aos="zoom-in" data-aos-duration="500">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
@@ -490,12 +538,7 @@ const AllArticles = () => {
                     {/* Actions */}
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center space-x-2">
-                        <button 
-                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors group"
-                          title="View Article"
-                        >
-                          <FaEye className="text-sm group-hover:scale-110 transition-transform" />
-                        </button>
+                        {/* View Article button removed */}
                         {article.status !== 'published' && article.status !== 'declined' && (
                           <button 
                             className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors group"
@@ -649,10 +692,7 @@ const AllArticles = () => {
 
               {/* Action Buttons */}
               <div className={`grid gap-2 ${article.status === 'published' || article.status === 'declined' ? 'grid-cols-3' : 'grid-cols-5'}`}>
-                <button className="flex flex-col items-center p-3 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-                  <FaEye className="text-lg mb-1" />
-                  <span className="text-xs">View</span>
-                </button>
+                {/* View button removed */}
                 {article.status !== 'published' && article.status !== 'declined' && (
                   <button 
                     className="flex flex-col items-center p-3 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
@@ -720,6 +760,67 @@ const AllArticles = () => {
             </button>
           </div>
         )}
+
+        {/* Pagination Controls */}
+        {pagination.totalPages > 1 && (
+          <div className="mt-6 flex justify-center">
+            <div className="flex items-center gap-1 sm:gap-2 bg-white p-2 rounded-lg shadow-md border border-blue-100">
+              {/* Previous Button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={!pagination.hasPrevPage}
+                className={`flex items-center justify-center w-10 h-10 rounded-md ${
+                  pagination.hasPrevPage 
+                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200'
+                    : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                }`}
+                aria-label="Previous page"
+              >
+                <FaAngleLeft className="w-4 h-4" />
+              </button>
+              
+              {/* Page Numbers */}
+              {pageNumbers.map(number => (
+                <button
+                  key={number}
+                  onClick={() => handlePageChange(number)}
+                  className={`flex items-center justify-center w-10 h-10 rounded-md text-sm font-medium transition-all duration-200 ${
+                    number === currentPage
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-white text-gray-700 hover:bg-blue-50'
+                  }`}
+                >
+                  {number}
+                </button>
+              ))}
+              
+              {/* Next Button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!pagination.hasNextPage}
+                className={`flex items-center justify-center w-10 h-10 rounded-md ${
+                  pagination.hasNextPage
+                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200'
+                    : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                }`}
+                aria-label="Next page"
+              >
+                <FaAngleRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Pagination Info */}
+        {articles.length > 0 && (
+          <div className="mt-3 text-center text-sm text-gray-600">
+            <p>
+              Showing {(currentPage - 1) * itemsPerPage + 1} 
+              {" - "}
+              {Math.min(currentPage * itemsPerPage, pagination.totalArticles)} of {pagination.totalArticles} articles
+            </p>
+          </div>
+        )}
         
 
 
@@ -727,7 +828,7 @@ const AllArticles = () => {
         {showDeclineModal && (
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all" data-aos="zoom-in" data-aos-duration="300">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
               <div className="p-6">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between mb-4">
